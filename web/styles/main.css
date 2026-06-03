@@ -1,0 +1,5019 @@
+/* Typography. The game-wide voice is Times New Roman (a system serif, no web
+   load needed). The Jersey-10 "fighting-game" pixel face — loaded via <link>
+   in index.html, which lands faster than @import and avoids a FOUC on first
+   paint — is reserved for the combat call-outs that incite combat: VS, HIT,
+   MISS, SUCCESS, FAIL, "To Arms!", "Roll for Initiative", "Order of Battle",
+   plus the rolled result / initiative numbers. Both are exposed as the
+   --font-body / --font-combat tokens (declared in the html, body block). */
+
+/* "Pixelated Times New Roman" by Sigmath Bits (FontStruct) — the hero-name face
+   on the character-select cards. Bundled locally (web/fonts/) so it's fingerprinted
+   by Vite; license + readme kept alongside per the FontStruct terms. */
+@font-face {
+  font-family: "Pixelated Times New Roman";
+  src: url("../fonts/pixelated-times-new-roman.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  width: 100%;
+  height: 100dvh;
+  margin: 0; padding: 0;
+}
+
+html, body { overflow: hidden; }
+
+html, body {
+  font-family: var(--font-body);
+  background: #000000;
+  color: #f0e6d0;
+  font-size: 15px;
+  /* Responsive board scaling bounds (multiples of --canvas-native-w/h).
+     The .board canvas rule uses clamp(MIN, PREFERRED, MAX) between these. */
+  --board-min-scale: 0.7;
+  --board-max-scale: 1.15;
+
+  /* --- Narrator-window vertical reserve -------------------------------------
+     The board + narrator stack is vertically centered inside .game-area, so
+     the board's Y depends on the stack's height. To keep the board (and the
+     dialogue text above the dock) from MOVING when the player's combat action
+     toolbar appears, the narrator window is a FIXED height — never `min-height`
+     that would grow with its content and re-center the board upward.
+       --dialogue-zone-h : the fixed slot for the narration / hero-speech text
+                           region (the dialogue zone, top of the window).
+       --dock-reserve-h  : everything below it inside the window — the dialog
+                           Skip/Auto row + the bottom-pinned player dock (action
+                           hint + Attack/Move/Special/End-Turn chips + the prompt
+                           input & "Say to" radios) at its TALLEST (a human
+                           combat turn). Empirically ~144px + 8vh fits that dock
+                           across 577–1080px-tall viewports (measured 2026-06-01).
+       --narrator-reserve-h : their sum — the window's fixed height AND the slice
+                           the .board canvas max-height subtracts, so board and
+                           window always coexist without the board shifting.
+     The short-viewport @media override below shrinks --dialogue-zone-h, which
+     flows through both the window height and the canvas reserve automatically. */
+  --dialogue-zone-h: clamp(80px, 14vh, 150px);
+  --dock-reserve-h: calc(144px + 8vh);
+  --narrator-reserve-h: calc(var(--dialogue-zone-h) + var(--dock-reserve-h));
+
+  /* --- Stamped Iron & Carved Oak — pixel-art medieval frame tokens.
+     The palette is unchanged from the original wood/gold/cream scheme;
+     these aliases just give every component a single source of truth so
+     the ring-stack pattern stays consistent across frames + buttons. */
+  --iron-dark:  #1a120a;    /* dark iron rim — defines crisp pixel edges */
+  --iron-deep:  #0d0805;    /* deepest shadow / hard-pixel drop tone */
+  --wood-deep:  #2a1808;    /* shadow plank / seam between layers */
+  --wood-mid:   #5c3b1c;    /* main wood plank body */
+  --wood-light: #8b5a2b;    /* highlighted wood plank face */
+  --gold-band:  #c19a4a;    /* fortified gold trim ring */
+  --gold-trim:  #8b6a3a;    /* deeper gold for rivet base */
+  --gold-glow:  #f0c270;    /* bright gold accent / hover lift */
+  --bevel-hi:   rgba(193, 154, 74, 0.6);   /* top-left button highlight */
+  --bevel-lo:   rgba(0, 0, 0, 0.65);       /* bottom-right button shadow */
+
+  /* --- Typography tokens (see top-of-file note). --font-body is the
+     game-wide serif voice; --font-combat is the Jersey-10 pixel face kept
+     only for the combat call-outs (VS / HIT / MISS / SUCCESS / FAIL /
+     "To Arms!" / "Order of Battle" + the rolled result/initiative numbers). */
+  --font-body:   "Times New Roman", Times, serif;
+  --font-combat: "Jersey 10", "Press Start 2P", monospace;
+  /* The pixelated Times New Roman used for the hero-select card names. */
+  --font-hero-name: "Pixelated Times New Roman", "Times New Roman", Times, serif;
+}
+
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* --- Game area: fills the viewport space below the engine-loader top bar
+   and horizontally centers the board + narrator column inside it. As a
+   normal flow flex item with `flex: 1`, it grows to fill leftover viewport
+   height when content fits, and grows beyond the viewport when content
+   overflows — letting the page scroll vertically rather than clipping.
+   `justify-content: center` vertically centers the board + narrator stack.
+   This is only safe — i.e. the board does NOT slide up/down as the transient
+   UI below it (dice panel, action buttons, growing narrator text) appears —
+   because .narrator-window is a FIXED height (--narrator-reserve-h), so the
+   centered stack is a CONSTANT height regardless of which child is rendered.
+   (It used to be `flex-start`, top-anchored, for the same stability; that was
+   later switched to `center` for tall-display aesthetics, which reintroduced
+   the shift until the window was pinned to a fixed height.) The chat cluster
+   lives OUTSIDE .game-area so it can be position: fixed to the viewport. */
+.game-area {
+  flex: 1 1 auto;
+  min-height: 0;          /* allow children to shrink below content size */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Vertically center the board + narrator stack inside the area below
+     the engine-loader. On small viewports (~900px tall) the content
+     already fills the area and centering is a no-op; on large displays
+     (Studio Display, external 4K) the leftover space splits evenly above
+     and below the board instead of pooling at the bottom. Symmetric vh
+     padding keeps the gap proportional rather than ballooning on very
+     tall screens. */
+  justify-content: center;
+  padding: clamp(4px, 1vh, 16px) 0;
+  pointer-events: none;   /* let canvas + overlays handle their own events */
+}
+
+/* --- Board row: horizontal flex layout holding the board column (canvas +
+   narrator stack). Sized to its content (no `flex: 1`) so the row's height
+   tracks board + narrator stack exactly, and any leftover viewport height
+   lands below the row (below the action buttons) — keeping the gap between
+   board and narrator minimal. --- */
+.board-row {
+  /* Content-sized so the row's height tracks board + narrator stack
+     exactly. Leftover viewport height lands BELOW the row inside
+     .game-area, never as a gap between the board and its siblings. */
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;     /* children re-enable interaction */
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+}
+
+/* --- Board column: stacks the canvas wrapper on top of the narrator window
+   (text + dice + action buttons). `align-self: flex-start` keeps the column
+   tight to its content so the narrator flows directly under the wood frame
+   with no slack between them. --- */
+.board-column {
+  /* Content-sized; align-self: flex-start keeps the column at the top of
+     the row so leftover height lands below the column.
+     position: relative + padding-top: 74px reserves a permanent slot for
+     the turn-order bar at the top — the bar (when present) is rendered
+     absolutely INTO this slot so the board's vertical position never
+     shifts between story and combat modes. 74px ≈ bar slot min-height
+     60px + ~14px breathing strip below it (the bar is now frame-less, so
+     the slot height is just the active coin + halo room). */
+  position: relative;
+  padding-top: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: flex-start;
+  min-width: 0;
+  pointer-events: none;     /* children re-enable interaction */
+}
+
+/* --- Board: shrinks to its content; .game-area handles centering --- */
+.board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;   /* canvas re-enables interaction */
+}
+
+/* --- Board stage: a positioning shell that wraps the board and its dice
+   overlay so the roll/initiative panels can pin themselves to the visual
+   center of the canvas instead of the column. The stage hugs the board's
+   intrinsic size (canvas + wood frame), so .board-roll-overlay's `inset: 0`
+   maps precisely onto the canvas wrapper's bounding box. --- */
+.board-stage {
+  /* Content-sized — must NOT flex-grow, otherwise the canvas (which
+     respects its own aspect ratio via its width/height attributes) would
+     center inside an over-tall stage and leave vertical voids above and
+     below the board. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Absolute overlay rendered over the board area for the dice/initiative
+   panels. Empty space is click-through (`pointer-events: none`); the panel
+   itself re-enables pointer events via the .roll-panel rule. z-index sits
+   above the board's mini-bar layer (z-index 5) so the dice plaque reads
+   above HP bars and emoji props but below the event-log drawer. */
+.board-roll-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Strip the .roll-panel's vertical margins when it lives in the overlay —
+   the wrapper's flex centering already handles vertical placement, and the
+   default `clamp(...) auto clamp(...)` margin would offset the plaque off
+   true center. Horizontal `auto` margins are irrelevant inside a flex
+   parent so we collapse them too. */
+.board-roll-overlay .roll-panel {
+  margin: 0;
+}
+/* While the game is still loading (no DM narration produced yet) keep the
+   canvas wrapper hidden so the player sees only the engine-loader spinner
+   instead of an empty map flashing in. Layout.ts sets `data-loaded="false"`
+   on the .app element until the first narration line lands in chat; once
+   it does the wrapper fades in via the opacity transition below. The Pixi
+   canvas still mounts during this state (Board.ts mounts on first
+   scene+manifest) — we just don't render it. */
+.app[data-loaded="false"] .canvas-wrapper {
+  opacity: 0;
+  pointer-events: none;
+}
+.canvas-wrapper {
+  transition: opacity 280ms ease;
+}
+
+/* Board stays visible in both story and combat modes — the grid is the
+   primary stage even during non-combat scenes (exploration, dialogue,
+   ability tests). The Pixi canvas stays mounted under the hood. */
+.board {
+  opacity: 1;
+  transition: opacity 360ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board {
+    transition: none;
+  }
+}
+
+/* --- Centered "Summoning the Tale" loading panel ---------------------------
+   Pinned to the viewport center while the DM hasn't spoken yet. Pure
+   decoration — no buttons, no input — so pointer-events stay off and it
+   never blocks the underlying chrome. Once `data-loaded="true"` lands on
+   .app, the panel fades and lifts a few pixels out of the way; the board
+   frame fades in simultaneously below.
+
+   Aesthetic: matches the carved-oak board frame — gold-on-ink stamped
+   pixel title (Jersey 10) flanked by hairline gold rules with a diamond
+   pip, italic body line below in the narrator typeface, three dots that
+   march in sequence so the user knows the page is alive. */
+.game-loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 20;
+  text-align: center;
+  /* Reveal staged off the .app[data-loaded] flip below. */
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 360ms ease,
+    transform 360ms ease,
+    visibility 0s linear 360ms;
+  visibility: hidden;
+}
+/* Visible only AFTER the hero pick (data-hero-picked, set by Layout once the
+   chooser resolves this page load) while the DM hasn't narrated yet. Without
+   the data-hero-picked guard the loader flashes on every fresh page load,
+   during the window between mount and the server's hero_select_request
+   arriving — the chooser, not this panel, is the first thing the player
+   should see. Flows that never offer the gate (mid-game reattach, scripted
+   runs) skip the loader entirely: the page stays dark until the snapshot /
+   opening splash lands moments later.
+
+   :where() keeps the hero-picked condition at ZERO specificity, so this rule
+   stays at the same weight as the data-opening / data-hero-select /
+   data-queued hide rules below — which must keep winning by source order, or
+   the loader bleeds through the translucent opening splash. */
+.app[data-loaded="false"]:where([data-hero-picked="true"]) .game-loading {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition:
+    opacity 360ms ease 80ms,
+    transform 360ms ease 80ms,
+    visibility 0s linear 0ms;
+}
+/* The "Summoning the Tale" loader covers the post-pick wait — it precedes the
+   opening splash. Once the splash takes over (data-opening) — or while the
+   "Choose Your Hero" gate (data-hero-select) or the session-queue window
+   (data-queued) is up — keep the loader hidden so it never shows THROUGH /
+   behind the presentation. */
+.app[data-opening="true"] .game-loading,
+.app[data-hero-select="true"] .game-loading,
+.app[data-queued="true"] .game-loading {
+  opacity: 0;
+  visibility: hidden;
+  transition: none;
+}
+
+/* While the session-queue window is up it IS the status — drop the top
+   banner so the wait isn't narrated twice (and never truncated). */
+.app[data-queued="true"] .engine-loader {
+  display: none;
+}
+
+/* Pre-pick boot window: until the player completes the hero pick this page
+   load (data-hero-picked) — or a reattach snapshot reveals a game already
+   under way (data-loaded flips true) — keep the REST of the chrome invisible
+   too: the top status banner and the Log/Survey buttons. Without this they
+   blink in on a fresh page load and straight back out when the full-screen
+   hero chooser mounts; the chooser should be the first thing the player
+   sees. visibility (not display) so the sticky banner keeps its layout slot
+   and nothing shifts when the chrome appears post-pick. The dialog Skip/Auto
+   buttons ride along — they're rendered unconditionally for layout
+   reservation but mean nothing before the first narration beat.
+
+   The same chrome also hides while the opening splash is up (data-opening):
+   the splash backdrop is a translucent radial gradient, so anything left
+   visible behind it ghosts through the intro text — the intro should sit on
+   pure black until the board reveals with the first narration. */
+.app[data-loaded="false"]:not([data-hero-picked="true"]) .engine-loader,
+.app[data-loaded="false"]:not([data-hero-picked="true"]) .event-log-toggle,
+.app[data-loaded="false"]:not([data-hero-picked="true"]) .dialog-skip-row,
+.app[data-opening="true"] .engine-loader,
+.app[data-opening="true"] .event-log-toggle,
+.app[data-opening="true"] .dialog-skip-row {
+  visibility: hidden;
+}
+
+/* --- Session-queue window --------------------------------------------------
+   Centered window shown while the server holds this tab in the wait line for
+   a free game slot (store.queued → Layout's data-queued). Replaces the boot
+   loader and the top banner for that stage (rules above). Carved-wood +
+   hard-pixel-bevel frame matching .survey-window so it reads as part of the
+   same chrome. Purely informational — no controls — so pointer-events stay
+   off and the floating chrome (Log / Survey) remains clickable behind it. */
+.queue-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;             /* same layer as the boot loader it replaces */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+  user-select: none;
+  background: radial-gradient(
+      ellipse at center,
+      rgba(18, 13, 8, 0.35) 0%,
+      rgba(10, 7, 4, 0.6) 100%
+    );
+}
+.queue-window {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 92vw);
+  background: linear-gradient(180deg, #232019 0%, #14110c 100%);
+  color: #efe2c2;
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #463c2d,
+    inset -2px -2px 0 0 #000,
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    5px 7px 14px rgba(0, 0, 0, 0.6);
+}
+.queue-titlebar {
+  flex: 0 0 auto;
+  padding: 12px 18px 10px;
+  background: rgba(20, 15, 10, 0.92);
+  border-bottom: 2px solid #000;
+  text-align: center;
+}
+.queue-title {
+  margin: 0;
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--gold-glow);
+  text-shadow: 0 2px 0 #000;
+}
+.queue-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 26px 24px;
+  text-align: center;
+}
+.queue-line {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.7vw, 19px);
+  line-height: 1.6;
+  color: #ecdfc6;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+/* The place-in-line number — the one thing the waiting player watches. */
+.queue-pos {
+  color: var(--gold-glow);
+  font-weight: 700;
+}
+.queue-sub {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(13px, 1.3vw, 15px);
+  color: #d4c4a0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* Session-gone variant: shown when the server refused a reattach (the game no
+   longer exists — restart / idle reap). Sits ABOVE every other screen (hero
+   select 40, survey 45) because a stale presentation may still be on display
+   underneath, and is interactive: its Reload button makes the fresh claim. */
+.queue-overlay--gone {
+  z-index: 50;
+  pointer-events: auto;
+  background: radial-gradient(
+      ellipse at center,
+      rgba(18, 13, 8, 0.7) 0%,
+      rgba(10, 7, 4, 0.88) 100%
+    );
+}
+.queue-reload {
+  margin-top: 8px;
+  padding: 8px 26px 7px;
+  font-family: var(--font-hero-name);
+  font-size: 21px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: #1a1410;
+  background: linear-gradient(180deg, #d9a84e 0%, #b5832e 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 1px 1px 0 0 #f0c270,
+    inset -1px -1px 0 0 #7a5618,
+    0 2px 0 #000;
+  cursor: pointer;
+}
+.queue-reload:hover { filter: brightness(1.08); }
+.queue-reload:active { transform: translate(1px, 1px); box-shadow: inset 1px 1px 0 0 #7a5618; }
+.queue-reload:focus-visible { outline: 2px solid var(--gold-glow); outline-offset: 2px; }
+
+/* Gold pixel title — letter-spaced wide for a "stamped onto a banner" feel.
+   Subtle steady pulse on the text-shadow keeps it from looking frozen. */
+.game-loading-title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(28px, 4.2vw, 52px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-glow);
+  text-shadow:
+    0 0 1px var(--gold-band),
+    0 2px 0 var(--iron-deep),
+    0 0 10px rgba(240, 194, 112, 0.22);
+  animation: game-loading-pulse 2.8s ease-in-out infinite;
+  /* Optical: pixel font's baseline sits low — nudge it up so the rule above
+     hugs the cap height instead of floating. */
+  line-height: 1;
+  padding-left: 0.22em;  /* compensate for last-letter tracking spill */
+}
+
+/* Italic body line in the narrator typeface — ties the loading copy to the
+   DM's voice elsewhere on the page. */
+.game-loading-sub {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(13px, 1.3vw, 16px);
+  color: #d4c4a0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  max-width: 38ch;
+  line-height: 1.5;
+}
+
+/* The trailing "..." marches in sequence so the page feels alive without
+   spinning. Each dot fades 0 → 1 → 0 with a 220ms phase offset. */
+.game-loading-dots {
+  display: inline-block;
+  margin-left: 0.05em;
+  letter-spacing: 0.1em;
+}
+.game-loading-dots > span {
+  opacity: 0.2;
+  animation: game-loading-dot 1.4s ease-in-out infinite;
+}
+.game-loading-dots > span:nth-child(2) { animation-delay: 220ms; }
+.game-loading-dots > span:nth-child(3) { animation-delay: 440ms; }
+
+/* Hairline gold rule with a diamond pip at the center — echoes the gold
+   pinstripe ring on the board frame. Sized to ~min(60vw, 420px) so it
+   spans the title comfortably on every screen size. */
+.game-loading-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(60vw, 420px);
+  color: var(--gold-trim);
+}
+.game-loading-rule .rule-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold-trim) 30%,
+    var(--gold-band) 50%,
+    var(--gold-trim) 70%,
+    transparent 100%
+  );
+}
+.game-loading-rule .rule-pip {
+  font-size: 11px;
+  color: var(--gold-band);
+  text-shadow: 0 0 3px rgba(240, 194, 112, 0.3);
+  transform: translateY(-1px);
+}
+
+@keyframes game-loading-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 1px var(--gold-band),
+      0 2px 0 var(--iron-deep),
+      0 0 9px rgba(240, 194, 112, 0.18);
+  }
+  50% {
+    text-shadow:
+      0 0 1px var(--gold-glow),
+      0 2px 0 var(--iron-deep),
+      0 0 13px rgba(240, 194, 112, 0.32);
+  }
+}
+@keyframes game-loading-dot {
+  0%, 80%, 100% { opacity: 0.2; }
+  40%           { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-loading-title,
+  .game-loading-dots > span,
+  .opening-pending-dots > span {
+    animation: none;
+  }
+}
+
+/* --- Adventure-opening title splash -------------------------------------
+   Full-screen gate shown at game start over the loader + (hidden) board,
+   holding the scene's opening box text until the player clicks "Begin". Sits
+   above everything else on screen during the opening (loader 20, drawer 22,
+   combat-begins splash 26) since nothing else is meant to be interactive
+   while it's up. Shares the wood-and-gold language of .game-loading. */
+.opening-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(
+      ellipse at center,
+      rgba(18, 13, 8, 0.86) 0%,
+      rgba(10, 7, 4, 0.95) 100%
+    );
+  user-select: none;
+  animation: opening-splash-in 420ms ease both;
+}
+/* No card/box — just the centred text + rules + Begin, floating on the dim
+   backdrop. (Card border / fill / shadow intentionally removed.) */
+.opening-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: min(72ch, 86vw);
+  padding: 0;
+  text-align: center;
+  /* Canonical portrait reference = the body font size. Inline avatars size off
+     THIS (not their local font), so the same crop renders in prose and in the
+     smaller italic quote. */
+  --opening-portrait: clamp(15px, 1.7vw, 20px);
+}
+.opening-body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.7vw, 20px);
+  line-height: 1.7;
+  color: #ecdfc6;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+.opening-body + .opening-body { margin-top: 0.7em; }
+/* Hero / NPC mention: name + (first time) an inline portrait, kept together. */
+.opening-cast {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+.opening-name {
+  font-weight: 700;
+  color: #fff2d6;
+}
+/* Head crop — shows the hero/NPC's FACE, not the full body, matching the
+   dialogue speech-portrait (`.hero-head`): the south-facing sprite is scaled
+   3× and offset so the visible window lands on the centred head. All sizes are
+   derived from --opening-portrait (the body font size) rather than the local
+   `em`, so an avatar inside the smaller italic quote renders at the SAME size
+   as one in the prose; ratios mirror .hero-head (window:size:offset =
+   1.7 : 5.1 : (-1.7, -0.47)). */
+.opening-avatar {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: calc(var(--opening-portrait) * 1.7);
+  height: calc(var(--opening-portrait) * 1.7);
+  /* Breathing room between the preceding prose and the portrait. */
+  margin-left: calc(var(--opening-portrait) * 0.35);
+  background-size: calc(var(--opening-portrait) * 5.1) calc(var(--opening-portrait) * 5.1);
+  background-position: calc(var(--opening-portrait) * -1.7) calc(var(--opening-portrait) * -0.47);
+  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--gold-trim);
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+/* Spoken line — broken onto its own row, set apart from the prose by its italic
+   styling and warm colour (no left rule/indent; matches the prose font size). */
+.opening-quote {
+  display: block;
+  margin: 0.8em 0;
+  padding: 0.1em 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.7vw, 20px);
+  line-height: 1.7;
+  font-style: italic;
+  color: #f3d7a4;
+}
+.opening-splash--typing { cursor: pointer; }
+/* The opening's Skip/Begin control reuses the dialogue Skip glyph (`.dialog-skip`).
+   It's the splash's sole call-to-action, so give it a touch more presence than
+   the in-narrator Skip: a slightly larger icon, a higher resting opacity, and a
+   localized "Continue" text label (i18n `opening.continue`) so first-time
+   players know the button advances the story. */
+.opening-skip {
+  opacity: 0.85;
+  gap: 10px;
+}
+.opening-skip svg {
+  width:  clamp(22px, 3vh, 30px);
+  height: clamp(22px, 3vh, 30px);
+}
+/* Label voice matches the LOG / SURVEY chrome buttons (serif, uppercase,
+   tracked out) so all top-level call-to-action text reads as one set. The
+   parent button zeroes line-height for the svg's intrinsic box — restore it
+   here so the text gets a real line box. */
+.opening-skip-label {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 1.5vw, 17px);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+/* Pending state: shown in place of the Skip/Begin control once the player has
+   begun but the DM's first narration hasn't landed. Echoes the boot loader's
+   italic sub-line voice with the same marching dots, so the splash reads as
+   "the DM is now writing" rather than re-exposing the boot loader. */
+.opening-pending {
+  margin: 0.2em 0 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(13px, 1.3vw, 16px);
+  letter-spacing: 0.02em;
+  color: #d4c4a0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  animation: opening-pending-in 360ms ease 120ms both;
+}
+.opening-pending-dots {
+  display: inline-block;
+  margin-left: 0.05em;
+  letter-spacing: 0.1em;
+}
+.opening-pending-dots > span {
+  opacity: 0.2;
+  animation: game-loading-dot 1.4s ease-in-out infinite;
+}
+.opening-pending-dots > span:nth-child(2) { animation-delay: 220ms; }
+.opening-pending-dots > span:nth-child(3) { animation-delay: 440ms; }
+@keyframes opening-pending-in {
+  from { opacity: 0; }
+  to   { opacity: 0.92; }
+}
+@keyframes opening-splash-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-splash { animation: none; }
+}
+
+/* --- "Choose your hero" game-start screen ---------------------------------
+   Full-screen gate shown ONCE at game start, ABOVE the board and the opening
+   splash (z-index 40 > opening 30), holding the whole run until the player
+   picks which starting hero they control. The two heroes not chosen are driven
+   by their AI agents. Shares the wood-and-gold language of the other gates. */
+.hero-select {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #000;
+  user-select: none;
+  animation: opening-splash-in 420ms ease both;
+  overflow: auto;
+}
+/* ============================================================================
+   Hero select — a Tibia 6.4 / Ultima Online "character window". Everything is
+   built from HARD pixel bevels (zero-blur inset shadows: a light edge top-left =
+   raised, a dark edge bottom-right = recessed; the niches invert that for a
+   sunken slot). Carved-stone fills, a gold riveted frame and a gold title bar.
+   Selection is a LIT gold-beveled plate (the floating arrow is gone) — the way a
+   chosen slot lights up in those old clients. */
+/* No outer window — the hero plates sit directly on the black page. The window
+   element is just a centered layout column for title / plates / button. */
+.hero-select-window {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  max-width: min(1024px, 95vw);
+}
+.hero-select-titlebar { text-align: center; }
+
+/* --- EN/PT game-language toggle (titlebar) -------------------------------
+   Two small beveled stone buttons under the title. The active language wears
+   the pressed-in bevel + gold face, mirroring .hero-select-confirm's states. */
+.hero-select-lang {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.hero-select-lang-btn {
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b9a884;
+  padding: 4px 12px 5px;
+  background: linear-gradient(180deg, #3a2d18 0%, #221808 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #5e4a26,
+    inset -2px -2px 0 0 #000;
+  text-shadow: 0 1px 0 #000;
+}
+.hero-select-lang-btn:hover:not(.hero-select-lang-btn--active),
+.hero-select-lang-btn:focus-visible {
+  outline: none;
+  color: #efe2c2;
+  filter: brightness(1.14);
+}
+.hero-select-lang-btn--active {
+  color: var(--gold-glow);
+  /* pressed — inverted bevel, the active language sinks in */
+  box-shadow: inset 2px 2px 0 0 #000, inset -2px -2px 0 0 #5e4a26;
+  cursor: default;
+}
+
+.hero-select-title {
+  margin: 0;
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 0.92;
+  letter-spacing: 0.08em;
+  color: var(--gold-glow);
+  text-shadow: 0 2px 0 #000, 0 0 10px rgba(240, 194, 112, 0.25);
+}
+.hero-select-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  justify-content: center;
+  align-items: stretch;
+}
+.hero-select-footer {
+  display: flex;
+  justify-content: center;
+}
+
+/* --- Hero plate — a selectable, beveled slot ----------------------------- */
+.hero-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  width: clamp(214px, 23vw, 248px);
+  padding: 16px 16px 18px;
+  cursor: pointer;
+  text-align: center;
+  background: linear-gradient(180deg, #232019 0%, #14110c 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #463c2d,
+    inset -2px -2px 0 0 #000;
+  animation: hero-card-rise 360ms ease both;
+}
+.hero-card:nth-child(2) { animation-delay: 90ms; }
+.hero-card:nth-child(3) { animation-delay: 180ms; }
+.hero-card:hover,
+.hero-card:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 2px 2px 0 0 #6a5a40,
+    inset -2px -2px 0 0 #000;
+}
+/* Chosen plate: pressed IN — inverted bevel (dark top-left, light bottom-right)
+   + darker-at-top fill + gold name. No glow / gold frame: the oldschool
+   "clicked slot" look (replaces the old arrow). */
+.hero-card--selected,
+.hero-card--selected:hover {
+  background: linear-gradient(180deg, #14110c 0%, #201c15 100%);
+  box-shadow:
+    inset 2px 2px 0 0 #000,
+    inset -2px -2px 0 0 #4a4036;
+}
+@keyframes hero-card-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Hero sprite — no frame/box; the full sprite stands on the plate ----- */
+.hero-card-portrait {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-card-frame {
+  height: 150px;          /* full-body sprite, prominent — no surrounding box */
+  width: auto;
+  image-rendering: pixelated;
+  opacity: 0;
+  pointer-events: none;
+}
+.hero-card-frame[data-active] { opacity: 1; }
+
+/* --- Engraved nameplate (above the sprite) ------------------------------- */
+.hero-card-name {
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: clamp(30px, 3.3vw, 42px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #cdbf9a;                 /* dim engraved gold (unselected) */
+  text-shadow: 0 2px 0 #000;
+}
+.hero-card--selected .hero-card-name {
+  color: var(--gold-glow);
+  text-shadow: 0 2px 0 #000;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Stats — a recessed strip of pixel-icon rows ------------------------- */
+.hero-card-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 9px 14px;
+  list-style: none;
+  width: 100%;
+  background: #100c08;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 0 #000, inset -2px -2px 0 0 #2c2418;
+}
+.hero-stat-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-body);
+  font-size: 21px;
+  line-height: 1;
+  color: #efe2c2;
+}
+.hero-stat-icon { width: 21px; height: 21px; image-rendering: pixelated; display: block; }
+.hero-hearts { gap: 3px; }
+.hero-hearts .hero-stat-icon { width: 19px; height: 19px; }
+.hero-stat-val { min-width: 0.7em; text-align: center; }
+.hero-stat-kind {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #b9a884;
+}
+
+/* --- Enter button — a raised beveled stone button ------------------------ */
+.hero-select-confirm {
+  cursor: pointer;
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: clamp(24px, 2.6vw, 34px);
+  letter-spacing: 0.06em;
+  color: var(--gold-glow);
+  padding: 8px 30px 10px;
+  background: linear-gradient(180deg, #4a3a20 0%, #2a1f10 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #7a6034,
+    inset -2px -2px 0 0 #000;
+  text-shadow: 0 2px 0 #000;
+}
+.hero-select-confirm:hover:not(:disabled),
+.hero-select-confirm:focus-visible:not(:disabled) {
+  outline: none;
+  color: #fff2d6;
+  filter: brightness(1.14);
+}
+.hero-select-confirm:active:not(:disabled) {
+  /* pressed — invert the bevel so the button sinks in */
+  box-shadow: inset 2px 2px 0 0 #000, inset -2px -2px 0 0 #7a6034;
+  padding: 9px 29px 9px 31px;
+}
+.hero-select-confirm:disabled { opacity: 0.5; cursor: default; filter: grayscale(0.4); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-select { animation: none; }
+  .hero-card { animation: none; transition: none; }
+}
+
+/* --- "To Arms!" combat-begins splash --------------------------------------
+   Shown for one tick (~1.66s) between the engine's combat_started event and
+   the dice physics dispatch. Anchored INSIDE .board-stage (position:absolute,
+   inset:0) so it lands centered over the board canvas — not the viewport —
+   and stays scoped to whatever the player is actually looking at.
+
+   Visual style mirrors the on-board HIT!/MISS flashRoll callout (RollOverlay.ts):
+   King-of-Fighters / Capcom arcade aesthetic — Jersey 10 pixel font, vertical
+   yellow→orange→red gradient fill, heavy black outline, drop shadow, italic
+   skew. Same pop-overshoot-settle scale curve so the splash reads as a
+   bigger-budget cousin of the HIT! that lands on a successful attack.
+
+   Pointer-events stay off so it never intercepts board clicks. */
+.combat-begins {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 26;  /* one above .board-roll-overlay so it overlays the dice plaque */
+  text-align: center;
+}
+
+/* The big "To Arms!" glyph. Vertical fire gradient (yellow→orange→red) is
+   painted by clipping the text to a linear-gradient background — the same
+   color stops the Pixi HIT! label uses.
+
+   Outline + drop shadow use `filter: drop-shadow(...)` rather than
+   `text-shadow`. With `-webkit-text-fill-color: transparent` + a gradient
+   `background-clip: text`, every `text-shadow` paints a full opaque copy of
+   the glyph beneath the transparent fill — stack a handful of those and the
+   offset copies overlap the visible glyph silhouette and the whole letter
+   reads as solid black, swallowing the gradient. `filter: drop-shadow`
+   instead is applied to the ALREADY-CLIPPED element, so it sees the
+   gradient-filled glyph as its source and outlines that. Stacking eight
+   1-2px directional drop-shadows builds a thick "stamped" outline; the
+   final 3px/4px shadow is the actual drop shadow.
+
+   The italic skew matches RollOverlay's `label.skew.set(-0.18, 0)` (~10° at
+   the top), so this splash slants the same direction as the HIT!. */
+.combat-begins-title {
+  margin: 0;
+  font-family: var(--font-combat);
+  font-weight: 900;
+  font-size: clamp(40px, 5.4vw, 64px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  font-style: italic;
+
+  /* Vertical fire gradient clipped to the glyph silhouette. */
+  background: linear-gradient(
+    180deg,
+    #fff6a3 0%,
+    #ffe23a 35%,
+    #ff7a14 70%,
+    #c61f12 100%
+  );
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+
+  /* Slant the sprite so we read italic even when Jersey 10 has no true
+     italic glyphs — matches the Pixi label's `skew.set(-0.18, 0)`. The
+     drop-shadow filter chain below paints the outline + shadow on the
+     already-slanted, gradient-filled glyph. */
+  transform: skewX(-10deg);
+  filter:
+    drop-shadow( 1px  0   0 #000)
+    drop-shadow(-1px  0   0 #000)
+    drop-shadow( 0    1px 0 #000)
+    drop-shadow( 0   -1px 0 #000)
+    drop-shadow( 2px  0   0 #000)
+    drop-shadow(-2px  0   0 #000)
+    drop-shadow( 0    2px 0 #000)
+    drop-shadow( 0   -2px 0 #000)
+    drop-shadow( 3px  4px 0 rgba(0, 0, 0, 0.9));
+
+  animation:
+    combat-begins-pop 1660ms cubic-bezier(0.16, 0.84, 0.3, 1.0) forwards;
+}
+
+/* Sub-line: smaller, also italic, plain warm cream so the gradient title
+   isn't competing with a second gradient. */
+.combat-begins-sub {
+  margin: 0;
+  font-family: var(--font-combat);
+  font-weight: 700;
+  font-size: clamp(14px, 1.6vw, 20px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-style: italic;
+  color: #f0d9a8;
+  transform: skewX(-10deg);
+  filter:
+    drop-shadow( 1px  0   0 #000)
+    drop-shadow(-1px  0   0 #000)
+    drop-shadow( 0    1px 0 #000)
+    drop-shadow( 0   -1px 0 #000)
+    drop-shadow( 2px  3px 0 rgba(0, 0, 0, 0.85));
+  animation: combat-begins-sub-in 1660ms ease-out forwards;
+}
+
+/* Hide the decorative rules: KoF callouts are bare glyphs, no ornaments. */
+.combat-begins-rule {
+  display: none;
+}
+
+/* Pop / settle / hold-through-canvas-fade-in / fade-out scale curve over the
+   1660ms total. Layout dispatches the dice roll at COMBAT_BEGINS_DISPATCH_AT_MS
+   (720ms ≈ 43%) — the splash is at full opacity then. The dice canvas
+   fade-in is 600ms (CANVAS_FADE_MS in Dice3DOverlay.ts), so the canvas is
+   fully visible at ~1320ms (≈80%). The splash fades out from 80% → 100%,
+   landing on top of the already-visible dice scene with no perceived gap.
+   Pop/settle stops match the HIT! label's POP_MS (140) + SETTLE_MS (200)
+   constants in RollOverlay.ts so the moves rhyme visually. */
+@keyframes combat-begins-pop {
+  0% {
+    opacity: 0;
+    transform: skewX(-10deg) scale(0.55);
+  }
+  8% {
+    opacity: 1;
+    transform: skewX(-10deg) scale(1.30);
+  }
+  20% {
+    opacity: 1;
+    transform: skewX(-10deg) scale(1.00);
+  }
+  80% {
+    opacity: 1;
+    transform: skewX(-10deg) scale(1.00);
+  }
+  100% {
+    opacity: 0;
+    transform: skewX(-10deg) scale(0.96) translateY(-2px);
+  }
+}
+
+/* Sub-line: same hold-through-canvas-fade-in window as the title; lags the
+   title by ~120ms on entrance so the eye lands on "To Arms!" first. */
+@keyframes combat-begins-sub-in {
+  0%, 7%   { opacity: 0; transform: skewX(-10deg) translateY(4px); }
+  18%      { opacity: 1; transform: skewX(-10deg) translateY(0); }
+  80%      { opacity: 1; transform: skewX(-10deg) translateY(0); }
+  100%     { opacity: 0; transform: skewX(-10deg) translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-begins-title,
+  .combat-begins-sub {
+    /* Skip the pop / skew animation; do an opacity-only swap that keeps
+       the skew transform in place. */
+    animation: combat-begins-reduced 1660ms linear forwards;
+  }
+}
+@keyframes combat-begins-reduced {
+  0%, 100% { opacity: 0; }
+  10%, 90% { opacity: 1; }
+}
+
+/* --- "The End" closing banner ---------------------------------------------
+   Mounted into `.board-stage` (EndingBanner.ts) when the adventure ends — the
+   server's `end` envelope, fired after the last scene's `all-monsters-ko → END`
+   transition (the king rat dies). The board canvas fades out beneath it (the
+   `.app[data-ended] .board` rule), the turn-order ribbon is hidden, and Layout
+   drops the narrator window — so the closing screen is this gold banner alone,
+   with no leftover narration or hero speech text. Visual language matches the
+   "Summoning the Tale" loading panel so the run opens and closes on the same
+   wood-and-gold note. */
+.app[data-ended] .board {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 520ms ease;
+}
+.app[data-ended] .turn-order-bar {
+  display: none;
+}
+.ending-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 27;  /* above the combat-begins splash (26) and dice plaque */
+  text-align: center;
+  opacity: 0;
+  /* Hold ~220ms so the board has begun fading before the banner blooms in. */
+  animation: ending-banner-in 720ms ease-out 220ms forwards;
+}
+.ending-title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 76px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--gold-glow);
+  text-shadow:
+    0 0 1px var(--gold-band),
+    0 2px 0 var(--iron-deep),
+    0 0 12px rgba(240, 194, 112, 0.26);
+  padding-left: 0.16em;  /* compensate last-letter tracking spill */
+}
+/* Defeat / abort read cooler — muted gold so a "Victory!" stays the brightest
+   thing on the page when the heroes actually win. */
+.ending-banner[data-outcome="failure"] .ending-title,
+.ending-banner[data-outcome="aborted"] .ending-title {
+  color: #c9b58a;
+  text-shadow:
+    0 0 1px var(--gold-trim),
+    0 2px 0 var(--iron-deep),
+    0 0 10px rgba(120, 100, 70, 0.28);
+}
+.ending-subtitle {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(14px, 1.4vw, 18px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #d4c4a0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+.ending-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(52vw, 380px);
+  color: var(--gold-trim);
+}
+.ending-rule .rule-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold-trim) 30%,
+    var(--gold-band) 50%,
+    var(--gold-trim) 70%,
+    transparent 100%
+  );
+}
+.ending-rule .rule-pip {
+  font-size: 11px;
+  color: var(--gold-band);
+  text-shadow: 0 0 3px rgba(240, 194, 112, 0.3);
+  transform: translateY(-1px);
+}
+@keyframes ending-banner-in {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ending-banner {
+    animation: none;
+    opacity: 1;
+  }
+  .app[data-ended] .board {
+    transition: none;
+  }
+}
+
+/* --- GAME OVER screen (party wipe) ----------------------------------------
+   Shown by GameOverScreen.ts when the run ends because every hero was KO'd
+   (the server's `end` envelope with reason 'party_wipe'). Distinct from the
+   gentle gold "The Heroes Fall" ending banner: a wipe is the classic arcade
+   game-over, so it gets the punchy Jersey 10 combat font in defeat embers over
+   a darkened board takeover, naming the fallen. Anchored to `.board-stage`
+   (over the faded board canvas) at the same z-layer as the ending banner. */
+.game-over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 27;  /* above the combat-begins splash (26) and dice plaque */
+  text-align: center;
+  /* A dark vignette deepens the board's own fade so the embers carry the page. */
+  background: radial-gradient(
+    ellipse at center,
+    rgba(8, 4, 2, 0.55) 0%,
+    rgba(8, 4, 2, 0.82) 70%,
+    rgba(6, 3, 1, 0.92) 100%
+  );
+  opacity: 0;
+  /* Hold ~260ms so the board has begun fading before the screen slams in. */
+  animation: game-over-in 760ms cubic-bezier(0.16, 0.84, 0.3, 1.0) 260ms forwards;
+}
+.game-over-skull {
+  font-size: clamp(34px, 4.4vw, 56px);
+  line-height: 1;
+  color: #b9543c;
+  text-shadow:
+    0 2px 0 var(--iron-deep),
+    0 0 10px rgba(216, 50, 26, 0.28);
+  animation: game-over-skull-pulse 3.4s ease-in-out infinite;
+}
+.game-over-title {
+  margin: 0;
+  font-family: var(--font-combat);
+  font-weight: 400;
+  font-size: clamp(56px, 9vw, 116px);
+  letter-spacing: 0.04em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  /* Defeat embers — deep red → crimson → cold ash, the somber inverse of the
+     "To Arms!" splash's hot yellow→orange→red fire. */
+  background: linear-gradient(
+    180deg,
+    #ff7a52 0%,
+    #e23a1c 42%,
+    #a4220f 74%,
+    #5e160a 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Heavy "stamped" black outline + glow, matching the combat callouts. */
+  filter:
+    drop-shadow(1px 0 0 #1a0a06) drop-shadow(-1px 0 0 #1a0a06)
+    drop-shadow(0 1px 0 #1a0a06) drop-shadow(0 -1px 0 #1a0a06)
+    drop-shadow(2px 2px 0 #1a0a06) drop-shadow(-2px 2px 0 #1a0a06)
+    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 13px rgba(226, 58, 28, 0.28));
+}
+.game-over-sub {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(15px, 1.6vw, 20px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d8b8a0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+.game-over-fallen {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 18px;
+}
+.game-over-fallen-name {
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1.3vw, 16px);
+  letter-spacing: 0.1em;
+  color: #b59b86;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+.game-over-fallen-name::before {
+  content: "✝ ";
+  color: #7a5c4a;
+}
+.game-over-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(52vw, 380px);
+  margin-top: 6px;
+  color: #8a4a36;
+}
+.game-over-rule .rule-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #7a3322 30%,
+    #b9543c 50%,
+    #7a3322 70%,
+    transparent 100%
+  );
+}
+.game-over-rule .rule-pip {
+  font-size: 11px;
+  color: #c4624a;
+  text-shadow: 0 0 3px rgba(216, 50, 26, 0.3);
+  transform: translateY(-1px);
+}
+.game-over-hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a7866;
+  opacity: 0.8;
+}
+@keyframes game-over-in {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.92); }
+  60%  { opacity: 1; transform: translateY(0)    scale(1.03); }
+  100% { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes game-over-skull-pulse {
+  0%, 100% { opacity: 0.78; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-over {
+    animation: none;
+    opacity: 1;
+  }
+  .game-over-skull {
+    animation: none;
+  }
+}
+
+.board canvas {
+  display: block;
+  image-rendering: pixelated;
+  /* Viewport-aware caps: the canvas's intrinsic width/height attributes
+     (set by Board.ts:678 to gridW*CELL_PX × gridH*CELL_PX) define the
+     aspect ratio. The browser shrinks the canvas to fit whichever cap
+     binds first — width or height — preserving the ratio automatically.
+     The vertical reserve has two parts:
+       --chrome-h (192px): engine-loader + game-area padding + permanent
+       turn-order-bar slot (74px at top of .board-column) + canvas frame
+       margins. Fixed regardless of combat state.
+       --narrator-reserve-h (= .narrator-window's fixed height): reserved
+       footprint for narrator-text, hero speech, the Skip/Auto row, action
+       buttons, and prompt panel. The SAME expression the window is sized to,
+       so board + window always coexist and the board never shifts when the
+       player turn UI swaps in. */
+  width: auto;
+  height: auto;
+  max-width: 92vw;
+  max-height: calc(100dvh - var(--chrome-h, 192px) - var(--narrator-reserve-h));
+}
+
+/* --- Canvas wrapper + HTML mini-bar overlay layer ---
+   The canvas is CSS-scaled (image-rendering: pixelated) by 2-3x, which would
+   blur Pixi-rendered text. Mini bars are rendered as DOM elements positioned
+   over the canvas so they stay crisp at the browser's native pixel ratio. */
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  /* No CSS frame. The board's "frame" is now a DITHERED FADE-TO-BLACK VIGNETTE
+     baked into the lighting light map (see light-field.ts `VIGNETTE_DEPTH` +
+     Lighting.ts), so the GPU Bayer-dither shader renders a halftone fade to
+     black on all four edges — the board melts into the dark page. A box-shadow
+     ring would just fight that, so there's none here. */
+  background: var(--iron-dark);   /* in case the canvas hasn't loaded yet */
+  /* Breathing margin against neighboring layout. Margins clamp against vh so
+     the board contributes proportionally less chrome on short viewports. */
+  margin: clamp(6px, 1vh, 14px) clamp(6px, 1vw, 14px) clamp(8px, 1.2vh, 18px);
+}
+.mini-bar-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;   /* clicks pass through to the canvas */
+  z-index: 5;
+}
+.emoji-prop {
+  /* DM-spawned emoji prop. Centered on the grid cell; size set inline by
+     positionProp() so it scales with the canvas. The drop shadow gives the
+     glyph a little weight against busy tilemap backgrounds. */
+  user-select: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55));
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  text-align: center;
+}
+/* Transient emoji balloon spawned by hero `emote` actions.
+   Aesthetic: a simple translucent dark-gray dialog shape — no borders,
+   no chrome, no shadow. The balloon body (rounded rect + downward tail)
+   lives in an inline SVG mounted as the balloon div's first child — see
+   EmojiBalloon.ts. The emoji glyph is rendered as an HTML <span> on top
+   so native color-emoji still applies.
+   - .mini-bar-layer parent → positioned in displayed-pixel space
+   - --stack-x / --stack-y let multiple balloons fan up-and-right
+   - --cell is set by positionBalloon() so size scales with the canvas
+   - lifecycle: 220ms snap-in → 1.8s hold (gentle flutter) → 500ms fade */
+.emote-balloon {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 7;
+  /* anchor: bottom-center of the placard above the hero's head. The
+     CSS-var stack offset shifts older balloons up-and-right. */
+  transform:
+    translate(calc(-50% + var(--stack-x, 0px)),
+              calc(-100% + var(--stack-y, 0px)));
+  /* Box ratio matches the SVG viewBox (100:92) exactly so the placard
+     renders at uniform scale (no stroke distortion). The trailing tail
+     accounts for ~26% of total height; the visual "body" occupies the
+     upper ~63%. */
+  width:  calc(var(--cell, 64px) * 1.0);
+  height: calc(var(--cell, 64px) * 0.92);
+  display: grid;
+  place-items: center;
+  animation:
+    emote-pop-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    emote-flutter 3000ms 220ms ease-in-out infinite alternate;
+}
+/* Inline-SVG balloon shape — drawn by EmojiBalloon.ts. Fills the host
+   div so the body and tail scale together. No drop shadow: the fill is
+   intentionally translucent so the map shows through cleanly. */
+.emote-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.emote-glyph {
+  /* The emoji sits over the BODY of the balloon (the upper ~60% of the
+     SVG box), not the geometric center, which would land on the tail. */
+  position: relative;
+  z-index: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: calc(var(--cell, 64px) * 0.44);
+  line-height: 1;
+  text-align: center;
+  /* Lift the glyph upward into the balloon body. The SVG box is 92 units
+     tall; the body region runs y=4–58. Translating up by 20% lands the
+     glyph at y≈27 (slightly above the body's geometric center y=31). */
+  transform: translateY(-20%);
+}
+.emote-balloon--fading {
+  animation:
+    emote-fade-out 500ms ease-in forwards,
+    emote-flutter 3000ms ease-in-out infinite alternate;
+}
+@keyframes emote-pop-in {
+  0%   { opacity: 0; transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px) + 8px))
+           scale(0.5) rotate(-3deg); }
+  60%  { opacity: 1; transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px) - 2px))
+           scale(1.08) rotate(1.5deg); }
+  100% { opacity: 1; transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px)))
+           scale(1.0) rotate(0deg); }
+}
+/* Parchment-in-the-breeze: a gentle bob with a tiny sway. The rotation
+   is slight enough to suggest paper hanging by its rivets without the
+   emoji legibly tilting. */
+@keyframes emote-flutter {
+  0%   { margin-top: 0;    transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px)))
+           rotate(-0.8deg); }
+  100% { margin-top: -3px; transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px)))
+           rotate(0.8deg); }
+}
+@keyframes emote-fade-out {
+  0%   { opacity: 1; }
+  100% { opacity: 0; transform:
+           translate(calc(-50% + var(--stack-x, 0px)),
+                     calc(-100% + var(--stack-y, 0px) - 14px))
+           scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .emote-balloon,
+  .emote-balloon--fading {
+    animation: emote-pop-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+}
+
+.hover-coord {
+  /* Tiny "x,y" pill anchored to the top-left of the hovered grid cell.
+     DOM-rendered (not Pixi) so the text stays crisp under the canvas's CSS
+     pixelated upscale. */
+  position: absolute;
+  pointer-events: none;
+  margin: 3px 0 0 3px;
+  padding: 1px 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #f0e6d0;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 3px;
+  user-select: none;
+  z-index: 6;
+}
+.mini-bar {
+  position: absolute;
+  transform: translate(-50%, calc(-100% + 4px));
+  /* Name plate in the game-wide serif voice (--font-body). */
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  color: #ffffff;
+  /* 4-direction shadow keeps the name readable over any tile colour. */
+  text-shadow:
+    1px 1px 0 #000, -1px -1px 0 #000,
+    1px -1px 0 #000, -1px 1px 0 #000;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.0;
+  user-select: none;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+.mini-bar .mini-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 1px;
+  line-height: 1.0;
+  letter-spacing: 1.5px;
+}
+
+.mini-bar .mini-hearts {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pixel-art SVG heart. crispEdges keeps the rects sharp; the size is set in
+   CSS so the underlying viewBox stays tiny (7×6 pixels). The outline is
+   painted INSIDE the SVG itself, so no filter halo is needed. */
+.mini-heart {
+  width: 10px;
+  height: 9px;
+  display: inline-block;
+  shape-rendering: crispEdges;
+}
+
+/* Obstacle durability pips (crystal shards), floated above a damageable
+   obstacle like a mini-bar. Same overlay layer as mini-bars; positioned by
+   Board.ts in displayed-pixel space. */
+.dura-bar {
+  position: absolute;
+  transform: translate(-50%, calc(-100% + 4px));
+  pointer-events: none;
+  user-select: none;
+  /* No backing container — the shards stand alone like the HP hearts, relying
+     on their inline dark outline for contrast. Hidden by default; Board.ts
+     reveals it only while the cursor hovers the obstacle's cell. */
+  display: none;
+}
+.dura-bar .dura-pips {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
+  justify-content: center;
+}
+/* Sized + styled to match .mini-heart so durability reads as the heart's
+   sibling (just a different shape/colour, never confused for HP). */
+.dura-shard {
+  width: 10px;
+  height: 9px;
+  display: inline-block;
+  shape-rendering: crispEdges;
+}
+
+/* --- Top engine status banner: a pulsing state dot + a one-line status,
+   centred horizontally at the very top of the page. Shows what the engine
+   is doing right now (LLM thinking, monster acting, resolving, awaiting
+   player input). Renders as a normal flow item at the top of .app so the
+   board-row always sits BELOW it (not under it); `position: sticky` keeps
+   the banner pinned to the top of the viewport while the page scrolls.
+   `align-items: center` floats the content-width status row in the
+   horizontal centre rather than left-aligning it across the full width. --- */
+.engine-loader {
+  position: sticky;
+  top: 0;
+  flex: 0 0 auto;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;          /* centre the status row horizontally */
+  justify-content: flex-start;
+  background: transparent;
+  color: #f0e6d0;
+  padding: clamp(6px, 1.1vh, 12px) 14px 0;
+  min-height: clamp(34px, 4.6vh, 46px);
+  box-sizing: border-box;
+  pointer-events: none;         /* clicks beside the status fall through to the board */
+}
+
+/* The banner itself — no chrome: just the glowing state dot and the status
+   text sitting directly on the page, centred as a content-width row. The dot
+   keeps its glow and the text carries its own shadow/glow for legibility. */
+.loader-row {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 620px);
+}
+
+.loader-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+.loader-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6d6357;
+}
+.loader-spinner.busy {
+  background: #f0c270;
+  box-shadow: 0 0 4px rgba(240, 194, 112, 0.5);
+  animation: loader-pulse 1100ms ease-in-out infinite;
+}
+.loader-spinner.idle {
+  background: #79e07c;
+  box-shadow: 0 0 4px rgba(121, 224, 124, 0.5);
+}
+@keyframes loader-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.55; }
+  50%      { transform: scale(1.15); opacity: 1.0;  }
+}
+
+/* Status text in the Jersey 10 stamped pixel face — the same banner
+   typeface as the loading title and frame labels — so the running status
+   reads like part of the game's carved signage. With no plaque behind it,
+   a hard dark halo + soft black drop keep it legible over both the dark
+   page chrome and any bright board tiles, plus a faint gold glow. */
+.loader-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.9vh, 19px);
+  letter-spacing: 0.045em;
+  line-height: 1;
+  color: #f4ecd6;
+  text-shadow:
+    0 1px 0 var(--iron-deep),
+    0 2px 6px rgba(0, 0, 0, 0.85),
+    0 0 6px rgba(240, 194, 112, 0.16);
+  padding-top: 2px;             /* Jersey 10's baseline sits low — nudge for optical centring */
+}
+
+/* (The live streamed-thinking text renders as the in-world thought balloon
+   over the actor's head — web/styles/thought-balloon.css — not in this
+   banner.) */
+
+/* --- Chat cluster: bottom-left toggle button + collapsible panel.
+   Button is pinned to the bottom-left corner of the viewport via
+   position: fixed so it stays visible while the page scrolls. --- */
+.chat-cluster {
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.chat-toggle {
+  position: relative;
+  background: linear-gradient(180deg, #2a1d0e 0%, #1a120a 55%, #120a05 100%);
+  color: #f0e6d0;
+  border: none;
+  /* Stamped-iron button: asymmetric inset bevel (TL highlight, BR shadow)
+     + iron/gold/iron ring + hard-pixel drop shadow that snaps to pixels
+     when the page is CSS-scaled. The bevel + offset shadow read together
+     as a chunky raised plank — the SNES dialog-button silhouette. */
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    3px 3px 0 0 var(--iron-deep),
+    5px 7px 14px rgba(0, 0, 0, 0.55);
+  padding: 8px 14px;
+  font-size: 16px;
+  cursor: pointer;
+  user-select: none;
+  margin: 6px 10px 10px 6px;   /* room for the offset hard-pixel shadow */
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+  transition: filter 80ms steps(2, end);
+}
+.chat-toggle-icon  { font-size: 18px; line-height: 1; }
+.chat-toggle-label { font-size: 16px; font-weight: 400; letter-spacing: 0.12em; }
+.chat-toggle:hover {
+  background: linear-gradient(180deg, #3a2a18 0%, #221408 55%, #170c06 100%);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    inset 0 0 6px rgba(240, 194, 112, 0.16),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-glow),
+    0 0 0 3px var(--iron-dark),
+    3px 3px 0 0 var(--iron-deep),
+    5px 7px 14px rgba(0, 0, 0, 0.55);
+}
+.chat-toggle:active {
+  /* Pressed: invert bevel, drop snaps to 0px so the plank flush-mounts. */
+  transform: translate(2px, 2px);
+  background: linear-gradient(180deg, #120a05 0%, #1f1409 100%);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-lo),
+    inset -1px -1px 0 0 var(--bevel-hi),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    1px 1px 0 0 var(--iron-deep);
+}
+.chat-toggle:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 5px;
+}
+
+/* --- Chat overlay: translucent parchment panel beneath the toggle, framed
+   to match the stamped-iron family. The thin gold pinstripe + dark rim
+   reads as a leather-bound ledger sitting next to the Log button. --- */
+.chat-overlay {
+  position: static;
+  background:
+    linear-gradient(180deg, rgba(30, 22, 14, 0.92) 0%, rgba(18, 12, 8, 0.92) 100%);
+  color: #f0e6d0;
+  padding: 12px 14px;
+  border-radius: 0;          /* sharp pixel corners */
+  font-size: 15px;
+  line-height: 1.5;
+  width: min(38vw, 480px);
+  height: 30vh;
+  overflow-y: auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.18),
+    inset 0 0 14px rgba(0, 0, 0, 0.65),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--wood-mid),
+    0 0 0 3px var(--iron-dark),
+    0 0 0 4px var(--gold-band),
+    0 0 0 5px var(--iron-dark),
+    0 4px 14px rgba(0, 0, 0, 0.7);
+  margin: 2px 6px;            /* room for the outward frame rings */
+  scrollbar-width: thin;
+  scrollbar-color: var(--wood-mid) transparent;
+}
+.chat-overlay::-webkit-scrollbar        { width: 8px; }
+.chat-overlay::-webkit-scrollbar-track  { background: transparent; }
+.chat-overlay::-webkit-scrollbar-thumb  { background: var(--wood-mid); border-radius: 0; }
+.chat-overlay.collapsed { display: none; }
+.chat-overlay.expanded  { display: block; }
+.chat-overlay .chat {
+  background: transparent;
+  border: none;
+  height: auto;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+/* Chat color rules apply via .chat descendants — keep the existing palette */
+.chat .hero,
+.chat .enemy,
+.chat .dm-actor      { font-family: var(--font-body); }   /* character/speaker names */
+.chat .hero          { font-weight: 600; color: #f0c270; }   /* fallback */
+.chat .hero.warrior  { color: #ff8a6c; }
+.chat .hero.hunter   { color: #7ad07c; }
+.chat .hero.healer   { color: #d29ad6; }
+.chat .hero.warlock  { color: #ffaf6a; }
+.chat .enemy         { color: #ff6c5a; font-weight: 600; }
+.chat .dm-actor      { color: #c0b8a4; font-weight: 600; }
+.chat .dm-text       { font-style: italic; }
+/* Inline target tag next to a chat speaker name — e.g. "Bran [to Game]:".
+   Muted so it reads as metadata, not part of the speaker's voice. */
+.chat .chat-target-tag {
+  font-size: 0.8em;
+  color: rgba(192, 184, 164, 0.7);
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* --- Dialogue references -------------------------------------------------
+   Whenever the DM or a hero names a grid cell ("(11,3)") or a creature
+   ("King Rat", "giant-rat-2"), that run is wrapped in a `.dlg-ref` chip
+   (see src/util/markdown.ts + web/components/refs.ts). The chip is styled
+   distinctly from surrounding prose AND is hoverable: hovering it pulses a
+   ring around the matching cell / creature(s) on the board
+   (Board.setHoverHighlight, wired through Layout's onRefHover bridge).
+
+   `pointer-events: auto` is essential — the narrator window is otherwise
+   click-through (pointer-events: none), so without this the chips inside DM
+   narration would never receive hover. Chips appear across every dialogue
+   surface (narrator, hero/NPC speech bubbles, Event Log, DM's Aside), so the
+   rules are global rather than scoped under `.chat`. --- */
+.dlg-ref {
+  pointer-events: auto;
+  cursor: pointer;
+  /* No background container — the reference reads as inline prose,
+     distinguished only by its colour + dotted underline. Hover emphasises it
+     with a solid underline and a soft glow in the chip's own colour
+     (text-shadow, NOT a box), so the link to the board ring still reads. */
+  background: none;
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: text-shadow 120ms ease, filter 120ms ease, text-decoration-style 120ms ease;
+}
+/* Coordinates: monospace, cyan — reads like a map pin. */
+.dlg-ref--cell {
+  font-family: monospace;
+  font-size: 0.92em;
+  color: #6ad0ff;
+}
+/* Creatures: bold + faction-tinted (default gold). */
+.dlg-ref--creature { font-weight: 600; color: #ffe85c; }
+.dlg-ref--creature.dlg-ref--hero    { color: #ffcf7a; }
+.dlg-ref--creature.dlg-ref--monster { color: #ff8f7a; }
+.dlg-ref--creature.dlg-ref--npc     { color: #8fe0a0; }
+/* Hover affordance — solid underline + a glow in the chip's own colour. */
+.dlg-ref:hover {
+  text-decoration-style: solid;
+  text-shadow: 0 0 7px currentColor;
+  filter: brightness(1.12);
+}
+
+/* --- Player turn UI: a flat horizontal toolbar below the narrator text.
+   No surrounding plaque, no per-button ring stack — buttons read as crisp
+   pixel chips sitting on the page. The board's iron-and-gold frame is the
+   only "heavy" frame in the column; everything below it is presented as
+   inline tools so the eye lands on the board first and the player UI
+   second. The narrator-window is pointer-events: none (it sits over the
+   canvas), so .action-buttons and .prompt-panel explicitly re-enable
+   interaction below. */
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: stretch;          /* equal-height pills */
+  width: fit-content;
+  max-width: 92vw;
+  margin: clamp(4px, 0.8vh, 10px) auto 0;
+  pointer-events: auto;
+}
+/* Content-sized chips that cluster in the center rather than stretching to
+   fill the row. With the iron-pill drop shadows gone, equal-width stretching
+   only created dead air inside the button face. min-width keeps short
+   labels like "👣 Move" from collapsing below readable size. */
+.action-buttons .act-btn {
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+.act-btn {
+  position: relative;
+  background: linear-gradient(180deg, #2a1d0e 0%, #160e07 100%);
+  color: #f0e6d0;
+  border: none;
+  padding: clamp(5px, 0.9vh, 9px) 14px;
+  font-size: clamp(13px, 1.7vh, 16px);
+  font-weight: 400;
+  font-family: var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 0;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
+  /* One iron rim, one hairline gold pinstripe, one hard-pixel bottom step.
+     Collapsed from the previous 3-ring + drop-shadow stack so the chips sit
+     FLATTER and don't visually compete with the board frame above. */
+  box-shadow:
+    inset 0 0 0 1px var(--gold-band),
+    0 0 0 1px var(--iron-dark),
+    0 2px 0 0 var(--iron-deep);
+  transition:
+    filter 100ms ease,
+    transform 80ms ease,
+    box-shadow 100ms ease,
+    background 100ms ease;
+}
+.act-btn:hover {
+  background: linear-gradient(180deg, #3a2a18 0%, #1d130a 100%);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-glow),
+    inset 0 0 5px rgba(240, 194, 112, 0.14),
+    0 0 0 1px var(--iron-dark),
+    0 2px 0 0 var(--iron-deep);
+}
+.act-btn:active {
+  /* Pressed: snap down by the bottom step so the chip flush-mounts. */
+  transform: translateY(2px);
+  background: linear-gradient(180deg, #160e07 0%, #1f1409 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-band),
+    0 0 0 1px var(--iron-dark);
+}
+.act-btn:focus-visible {
+  outline: 1px solid var(--gold-glow);
+  outline-offset: 3px;
+}
+.act-btn-active {
+  /* Currently-selected action — bright forge-orange face with a gold-glow
+     pinstripe and an inset ember. Same chip silhouette as the resting state,
+     no extra rings, so the active state reads as a colour shift not a frame
+     swap. */
+  background: linear-gradient(180deg, #e07a1e 0%, #a64a0e 100%);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-glow),
+    inset 0 0 6px rgba(255, 208, 112, 0.22),
+    0 0 0 1px var(--iron-dark),
+    0 2px 0 0 #4a1d04;
+}
+.act-btn-active:hover {
+  filter: brightness(1.06);
+}
+/* End Turn — cool slate face so the "submit my turn" beat reads as a
+   distinct class from the warm Attack/Move actions, without needing a
+   second size or frame. Hover/active inherit from .act-btn. */
+.act-btn-end {
+  background: linear-gradient(180deg, #1c2030 0%, #0c0e1a 100%);
+}
+.act-btn-end:hover {
+  background: linear-gradient(180deg, #272c44 0%, #14172a 100%);
+}
+.act-btn-end:active {
+  background: linear-gradient(180deg, #0c0e1a 0%, #15182a 100%);
+}
+.action-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #f0c270;
+  text-align: center;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  margin-top: 8px;
+  /* Always reserve one line of vertical space — the slot is rendered even
+     when idle (no hint text) so toggling Attack/Move doesn't shift the
+     action buttons below. */
+  min-height: 1.4em;
+  opacity: 0.9;
+}
+
+/* Prompt panel: a FRAMELESS container holding the single prompt row
+   (target toggle welded to the input — Space.compact). The parchment
+   input itself carries the only frame in this region — the previous
+   wood/iron/gold ring stack + corner rivets were removed so the player UI
+   reads as one light strip instead of competing with the board's heavy
+   frame above. */
+.prompt-panel {
+  position: relative;
+  background: transparent;
+  color: #f0e6d0;
+  box-shadow: none;
+  border: none;
+  /* Top margin opens a deliberate breath between the action chips above
+     ("how do I act this turn?") and the prompt row below ("what do I say,
+     and to whom?"), so the two zones read as separate decisions instead of
+     one crammed stack. Scales with viewport height so the gap stays
+     proportional on short and tall displays alike. */
+  margin: clamp(14px, 2.4vh, 28px) auto 6px;
+  padding: 0;
+  width: min(440px, 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--font-body);
+  pointer-events: auto;
+}
+/* Corner rivets removed — the panel no longer has a frame to rivet onto. */
+.prompt-panel::before {
+  content: none;
+}
+/* Carved-iron slot. Reworked from the old light parchment to a DARK forge
+   surface so the input matches the game's "Stamped Iron & Carved Oak"
+   language — the same dark gradient + diagonal pixel-grain texture + warm
+   ember glow used by the combat HUD frame (dice-hud.css .combat-frame),
+   just recessed into the page instead of raised. Three stacked background
+   layers, top to bottom: (1) a 135° pixel-grain weave (identical stops to
+   .combat-frame::before) for forged-metal texture; (2) a faint ember glow
+   pooling at the top-left; (3) the dark oak→iron vertical gradient. The
+   text is now warm cream carved on dark; the hairline gold pinstripe halo
+   around the iron rim still lights up on focus, keeping the gold-on-iron
+   language shared with the action chips above. */
+.prompt-input {
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255, 230, 170, 0.05) 0, rgba(255, 230, 170, 0.05) 1px,
+      transparent 1px, transparent 3px),
+    radial-gradient(ellipse 75% 130% at 20% 0%,
+      rgba(193, 154, 74, 0.12) 0%, transparent 70%),
+    linear-gradient(180deg, #241a10 0%, #18100a 48%, #0d0805 100%);
+  color: #f1e7cf;
+  caret-color: var(--gold-glow);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+  border: none;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border-radius: 0;
+  outline: none;
+  width: 100%;
+  /* Carved bevel for a DARK recessed slot: a crisp dark top-left inner
+     edge (the wall blocking the light) + a faint warm-gold glint along the
+     bottom-right lip (light catching the metal as it falls in), so the slot
+     reads as cut INTO the iron rather than floating. Iron rim + a hairline
+     gold pinstripe outside complete the recess. */
+  box-shadow:
+    inset 1px 1px 0 0 rgba(0, 0, 0, 0.7),
+    inset -1px -1px 0 0 rgba(193, 154, 74, 0.25),
+    inset 0 0 0 2px var(--iron-dark),
+    0 0 0 1px rgba(193, 154, 74, 0.5);
+  transition: box-shadow 120ms ease, background 120ms ease;
+}
+.prompt-input::placeholder { color: rgba(238, 224, 196, 0.42); }
+.prompt-input:focus-visible {
+  box-shadow:
+    inset 1px 1px 0 0 rgba(0, 0, 0, 0.7),
+    inset -1px -1px 0 0 rgba(193, 154, 74, 0.25),
+    inset 0 0 0 2px var(--gold-glow),
+    0 0 0 1px rgba(240, 194, 112, 0.9);
+}
+
+/* Story-mode row: the toggle+input compact group sits flush left and
+   flexes to take all remaining width; the Skip button stays a fixed pill
+   on the right edge, separated by the row's gap. Combat mode wraps the
+   compact group directly under .prompt-panel without this row container —
+   no need for a Skip pill there since the action toolbar already has End
+   Turn. */
+.prompt-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.prompt-row .prompt-compact {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.prompt-skip {
+  flex: 0 0 auto;
+  align-self: stretch;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+/* Input + send = ONE welded control (Space.compact). The pair shares a
+   single continuous frame painted on the group: iron rim → gold band → iron
+   rim, the same stacked-ring idiom as the board frame above, just thin. The
+   group's iron-dark fill peeks through a 1px flex gap as the one internal
+   divider, so the input and the send button read as two segments of a single
+   control. Each child keeps only its FACE (carved-iron slot / forge button) —
+   neither carries its own outer rim. The send button only appears once the
+   field holds text, so most of the time the frame wraps the input alone. In
+   story mode the welded group lives inside .prompt-row, where the row's own
+   10px gap separates it from the Skip pill on the right; the "Say to" radio
+   group sits on its own row below the whole panel. */
+.prompt-compact {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  /* The single internal divider: a 1px channel that exposes the group's
+     iron-dark fill, crisp against the dark input. */
+  gap: 1px;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--iron-dark);
+  box-shadow:
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark);
+  transition: box-shadow 120ms ease, background 120ms ease;
+}
+/* Focusing the input lights the WHOLE control's gold ring and turns the
+   divider seam gold, so the welded pair reacts as one unit instead of just
+   the input flaring its own halo inside a static frame. */
+.prompt-compact:focus-within {
+  background: var(--gold-band);
+  box-shadow:
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-glow),
+    0 0 0 3px var(--iron-dark),
+    0 0 0 5px rgba(240, 194, 112, 0.22);
+}
+/* Inside the welded control the input sheds its own outer iron rim + gold
+   pinstripe (the group frame owns the outer edge now) and keeps only the
+   carved inset bevel — so it reads as a recessed slot WITHIN the frame, not
+   a second framed box. The bevel holds steady on focus; the frame + seam do
+   the reacting via :focus-within above. */
+.prompt-compact .prompt-input,
+.prompt-compact .prompt-input:focus-visible {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-shadow:
+    inset 1px 1px 0 0 rgba(0, 0, 0, 0.7),
+    inset -1px -1px 0 0 rgba(193, 154, 74, 0.25);
+}
+
+/* Target picker — a radio group BELOW the input bar. Two PLAIN radio options:
+   a circular iron-and-gold dot + a bare uppercase label, exactly one filled.
+   No caption, plate, frame, or background behind the label — just the classic
+   radio dot and the text (the group's accessible name is on aria-label). Real
+   radios drive selection (keyboard + a11y) but are visually hidden; the custom
+   dot (.prompt-target-option-face::before) is painted from the :checked state.
+   Both options fill the same gold when selected. */
+.prompt-target-radios {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  /* Left-aligned so the radios sit flush with the input bar's left edge, on
+     their own row below it. */
+  justify-content: flex-start;
+  gap: clamp(10px, 1.6vw, 16px);
+  width: 100%;
+}
+.prompt-target-option {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+/* Visually hide the real radio but keep it in the a11y tree + focusable. */
+.prompt-target-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* The option = a circular radio dot + a bare uppercase label. No plate, no
+   frame, no background — just the dot and the text. */
+.prompt-target-option-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 2px;
+  font-family: var(--font-body);
+  font-size: clamp(12px, 1.55vh, 15px);
+  letter-spacing: 0.06em;
+  text-transform: none;
+  white-space: nowrap;
+  color: #b7a47e;
+  background: none;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
+  transition: color 110ms ease;
+}
+/* The radio dot itself — an iron well ringed in dim gold, dark + empty until
+   selected. Sized to sit on the label's cap height. */
+.prompt-target-option-face::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #2a1d10 0%, #0d0805 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(193, 154, 74, 0.55),
+    inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.prompt-target-option:hover .prompt-target-option-face {
+  color: #e7d8b3;
+}
+.prompt-target-option:hover .prompt-target-option-face::before {
+  box-shadow:
+    inset 0 0 0 2px var(--gold-glow),
+    inset 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+/* Selected (Party or Dungeon Master — same treatment): a gold dot inside a
+   bright gold ring. */
+.prompt-target-option input:checked + .prompt-target-option-face {
+  color: #f4ead0;
+}
+.prompt-target-option input:checked + .prompt-target-option-face::before {
+  background: radial-gradient(circle at 50% 50%, var(--gold-glow) 0 3.4px, #0d0805 4px);
+  box-shadow:
+    inset 0 0 0 2px var(--gold-glow),
+    0 0 3px rgba(240, 194, 112, 0.35);
+}
+/* Keyboard focus lands on the hidden radio — ring the dot. */
+.prompt-target-option input:focus-visible + .prompt-target-option-face::before {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 2px;
+}
+/* Pressed: nudge the dot down a hair for tactile feedback. */
+.prompt-target-option:active .prompt-target-option-face::before {
+  transform: translateY(1px);
+}
+
+/* Send button — the RIGHT segment of the welded [input | send] control. It
+   sheds the act-btn outer iron rim + 3D bottom step (the group frame owns the
+   outer edge), keeping only its forge face, so the pair reads as one control
+   rather than two pills.
+
+   Visibility is driven entirely by the input's content via :placeholder-shown
+   — a live pseudo-class that matches WHILE the field shows its placeholder
+   (i.e. is empty). The general-sibling rule below reveals the button the
+   instant the field holds text and hides it again the instant it's cleared,
+   with no JS state and no per-keystroke re-render. Hidden via display:none
+   so it also drops out of the flex flow (no stray 1px seam) when absent.
+
+   Zero VERTICAL padding (the act-btn default uses a clamp + a larger font than
+   the input): align-self:stretch then sizes the button to the input's height
+   instead of the act-btn's taller intrinsic height, so the input bar doesn't
+   grow taller the moment the button appears. Horizontal padding is kept. */
+.prompt-compact .prompt-send {
+  display: none;
+  flex: 0 0 auto;
+  align-self: stretch;
+  padding-top: 0;
+  padding-bottom: 0;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px rgba(193, 154, 74, 0.4);
+}
+.prompt-compact .prompt-input:not(:placeholder-shown) ~ .prompt-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.prompt-compact .prompt-send:hover {
+  box-shadow: inset 0 0 0 1px var(--gold-glow);
+}
+.prompt-compact .prompt-send:active {
+  /* Stay flush — no translate inside the welded frame. */
+  transform: none;
+  box-shadow: inset 0 0 0 1px var(--gold-band);
+}
+.prompt-compact .prompt-send.act-btn-active {
+  box-shadow:
+    inset 0 0 0 1px var(--gold-glow),
+    inset 0 0 6px rgba(255, 208, 112, 0.22);
+}
+/* Slightly tint the input itself when in DM mode so the player has another
+   subtle cue (neutral iron → warm ember wash) that they're addressing the
+   DM. Same dark carved-iron slot + pixel-grain weave as the in-character
+   state, but the ember glow pools warmer and stronger and the oak gradient
+   carries more amber — like a candle thrown across the metal as you lean in
+   to ask. */
+.prompt-input--dm {
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255, 230, 170, 0.05) 0, rgba(255, 230, 170, 0.05) 1px,
+      transparent 1px, transparent 3px),
+    radial-gradient(ellipse 95% 150% at 22% 0%,
+      rgba(222, 170, 92, 0.22) 0%, transparent 72%),
+    linear-gradient(180deg, #2c2012 0%, #1c1209 48%, #0e0905 100%);
+}
+
+/* Dialog playback controls: two bare icon buttons (⏭ Skip, ⏩ Auto) that
+   sit at the right edge of the narrator window, below the dialogue text.
+   No iron pill, no background — just the glyph itself, so they read as
+   quiet on-screen affordances rather than a competing UI block.
+   .narrator-window has pointer-events: none, so each button re-enables
+   them for itself.
+
+   FIXED position: the row holds a stable X *and* Y. The dialogue text
+   region (.narrator-text / .hero-speech-feed) is given a fixed
+   `--dialogue-zone-h` height, so this in-flow row always lands at the same
+   Y (= board bottom + pad-top + zone height) regardless of how long the
+   current narration / speech beat is — it no longer bounces up and down
+   per beat. The bottom-pinned .player-dock (margin-top: auto) absorbs the
+   slack BELOW this row, so the buttons never collide with the player input
+   on a human turn either. */
+.dialog-skip-row {
+  /* Stretch to exactly the displayed canvas width so the icons line up
+     with the board's right edge. --canvas-displayed-w is set on :root by
+     Board.ts via ResizeObserver every time the canvas resizes — same
+     hook the turn-order bar uses (see .turn-order-bar). NO max-width cap:
+     the board can be marginally wider than the narrator window (board
+     max 92vw vs window 90vw), and align-items:center on .narrator-window
+     centers this row on the same axis as the board, so an uncapped
+     width = board-width row's right edge tracks the board's right edge
+     exactly even in that case. */
+  width: var(--canvas-displayed-w, 704px);
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin: clamp(2px, 0.4vh, 6px) 0 0;
+  padding: 0;
+  pointer-events: auto;
+  /* RESERVED height. The row is always rendered (see Layout.ts
+     dialogSkipSlot) — only the Skip/Auto buttons inside it come and go —
+     so this min-height keeps the row's footprint in the narrator-window
+     flex column constant whether the buttons are present or not. Matches
+     a button's box: svg height (.dialog-skip/.dialog-auto svg, the same
+     clamp below) + its 4px top/bottom padding, so an empty row is exactly
+     as tall as one holding buttons. Without this, showing/hiding the
+     buttons changed the window's flow height and the board above shifted
+     (.game-area centers the board+narrator stack vertically). */
+  min-height: calc(clamp(18px, 2.4vh, 22px) + 8px);
+}
+.dialog-skip,
+.dialog-auto {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  margin: 0;
+  font-family: inherit;
+  line-height: 0;            /* svg sets its own intrinsic box */
+  color: #f0e6d0;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  opacity: 0.7;
+  transition: opacity 80ms steps(2, end), color 80ms steps(2, end);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Anchor for the absolutely-positioned hotkey keycaps below. */
+.dialog-skip,
+.dialog-auto {
+  position: relative;
+}
+/* Inert Skip: nothing on screen to skip (no parked beat / plaque). The
+   button stays mounted — the controls are a constant pair now — but dims
+   well below the resting 0.7 and ignores hover so it reads as parked. */
+.dialog-skip--inert,
+.dialog-skip--inert:hover {
+  opacity: 0.3;
+  color: #f0e6d0;
+  cursor: default;
+}
+/* Keycap hints under the Skip / Auto buttons advertising the hotkeys
+   ("A" skips, "S" toggles auto). Absolutely positioned (top: 100%) so they
+   add NO flow height — .dialog-skip-row's reserved min-height stays
+   accurate and the board above never shifts. Inherits the button's opacity
+   transition via the parent, so it brightens with the glyph on hover. */
+.dialog-key-hint {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 1px;
+  padding: 2px 4px 1px;
+  border: 1px solid currentColor;
+  font-family: var(--font-combat);
+  font-size: 15px;           /* Jersey 10 runs small — 15px ≈ a 10px cap height */
+  /* Jersey 10 carries most of its em box as descent space below the glyph;
+     a sub-1 line-height trims it so the cap sits centered in the keycap. */
+  line-height: 0.65;
+  letter-spacing: 0;
+  pointer-events: none;      /* the keycap never steals the button's click */
+}
+.dialog-skip svg,
+.dialog-auto svg {
+  /* Sized in viewport units so the icon scales with the narrator window
+     (smaller on cramped screens, never larger than ~24px). 14×14 viewBox
+     with stepped diagonals gives the same pixel-art feel as the in-game
+     fonts when rendered around 20px tall. */
+  width:  clamp(18px, 2.4vh, 22px);
+  height: clamp(18px, 2.4vh, 22px);
+  display: block;
+}
+.dialog-skip:hover,
+.dialog-auto:hover {
+  opacity: 1;
+  color: #f0c270;
+}
+.dialog-skip:focus-visible,
+.dialog-auto:focus-visible {
+  outline: 1px solid var(--gold-glow);
+  outline-offset: 2px;
+  opacity: 1;
+}
+.dialog-auto--on {
+  opacity: 1;
+  color: #f0c270;
+}
+
+/* Accessibility-only */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.loading {
+  padding: 24px;
+  text-align: center;
+  color: #f0e6d0;
+  font-size: 15px;
+}
+
+/* --- Narrator: bare italic cream text flowing directly below the canvas
+   inside .board-column. No more percentage anchoring — the canvas wrapper's
+   bottom margin sets the gap to the wood frame's outermost ring. With
+   .canvas-wrapper's `margin-bottom: 14px` (= 12px box-shadow extent + 2px
+   breathing) and the narrator's line-height padding (~7px above the first
+   glyph at 15-17px font), the visible narrator text lands flush at the wood
+   frame's bottom edge with no visual void.
+   Width clamps to viewport so wide narration wraps before reaching the
+   side Event Log. pointer-events re-enable on interactive descendants
+   (.act-btn, .prompt-panel) so the narrator container itself stays
+   click-through over the board's empty bottom strip. */
+.narrator-window {
+  /* The dialogue text region (.narrator-text / .hero-speech-feed) holds a
+     fixed --dialogue-zone-h (defined on :root) so the in-flow .dialog-skip-row
+     below it keeps a stable Y instead of bouncing with each beat's length; a
+     rarely-longer beat scrolls inside that region rather than growing it. */
+  width: min(90vw, 900px);
+  /* FIXED height (not min-height) so the board's vertical position never
+     shifts when the window's children change — the player's combat action
+     toolbar appearing, the prompt panel swapping in for the action row,
+     narrator text growing, a hero speech bubble replacing narrator text. With
+     `min-height` the window GREW to fit the (tall) human-combat-turn dock, and
+     .game-area's vertical centering then slid the board — and the dialogue
+     text above it — upward by ~half that growth (the bug this fixes). A fixed
+     height keeps .game-area centering a CONSTANT-height stack, so the board
+     stays put regardless of which child is rendered. --narrator-reserve-h is
+     sized to contain the tallest (combat) dock, and the .board canvas
+     max-height subtracts the same expression so board + window coexist.
+     `overflow: visible` stays as a safety valve: a rare overlong stack (e.g. a
+     multi-line DM OOC reply pushing the prompt down) spills past the reserve
+     downward — into the bottom centering slack — instead of being clipped, and
+     still without moving the board. */
+  height: var(--narrator-reserve-h);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  /* Breathing strip below the wood-framed board. Scales with viewport
+     height so it stays proportional on short screens, but never
+     collapses to zero or balloons past ~24px. */
+  padding-top: clamp(10px, 1.8vh, 24px);
+  margin-top: 0;
+}
+
+/* Player dock — wraps the player UI (combat action toolbar + the prompt
+   input + the "Say to" radios) and pins it to the BOTTOM of the reserved
+   .narrator-window. `margin-top: auto` consumes the window's slack ABOVE the
+   dock, so the narration text (which grows/shrinks every beat) eats the gap
+   between itself and the prompt instead of pushing the prompt up and down —
+   the prompt holds a stable Y. The board above is unaffected (the window's
+   reserved min-height is unchanged); only when the whole stack outgrows that
+   reserved height does the dock travel downward, same as before. Because the
+   dock is bottom-anchored, the combat action buttons stack ABOVE the prompt
+   rather than displacing it, so the prompt's Y is steady across story/combat
+   too. */
+.player-dock {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.narrator-text {
+  color: #f0e6d0;
+  font-family: var(--font-body);
+  /* Font size scales with BOTH width and height so the text shrinks on
+     short viewports (where vertical space is the constraint) instead of
+     only on narrow ones. min(...vw, ...vh) picks whichever axis is tighter. */
+  font-size: clamp(15px, min(1.8vw, 2.3vh), 20px);
+  line-height: 1.4;
+  font-style: italic;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.95);
+  /* Fade-in/out between narration beats. updateNarratorText() drives
+     `opacity` imperatively (0 → swap markup → 1) and relies on this
+     transition to interpolate. Duration matches FADE_MS in NarratorWindow.ts. */
+  opacity: 1;
+  transition: opacity 220ms ease;
+  /* FIXED height (not min/max) so the dialogue region's bottom edge — and
+     therefore the .dialog-skip-row directly below it — stays at a constant
+     Y no matter how short or long the current narration is. Short narration
+     leaves whitespace below it within this box (the text hugs the top, right
+     under the board); a longer beat scrolls inside the box. `flex: none`
+     stops the column flex from shrinking it. Sized by the --dialogue-zone-h
+     knob on .narrator-window. */
+  height: var(--dialogue-zone-h);
+  flex: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #5c3b1c transparent;
+}
+.narrator-text::-webkit-scrollbar { width: 6px; }
+.narrator-text::-webkit-scrollbar-track { background: transparent; }
+.narrator-text::-webkit-scrollbar-thumb { background: #5c3b1c; border-radius: 0; }
+
+/* .narrator-placeholder is an empty marker span (no visible glyph) — the
+   "DM is composing" dots were removed deliberately; nothing renders while
+   the narrator has no text. */
+
+/* Unrevealed tail of a typewriter line. The span reserves the same layout
+   width as the final text so already-revealed characters stay locked in
+   place — without this, `text-align: center` on .narrator-window (and the
+   flex centering inside .hero-speech-body) would re-center each frame and
+   the visible letters would slide left as new ones appeared on the right. */
+.typewriter-hidden {
+  visibility: hidden;
+}
+
+/* When the hero-speech feed is rendering, the hero dialog REPLACES the
+   narrator text. The narrator-text node stays in the DOM (so the imperative
+   updateNarratorText painter can still update its content as new narration
+   arrives in the chat) — it just hides until the last hero speech expires.
+   Uses :has() so layout state mirrors the rendered content with no JS flag. */
+.narrator-window:has(.hero-speech-feed) .narrator-text {
+  display: none;
+}
+
+/* --- Hero speech: an unframed dialog line that replaces the narrator text
+   below the board when a hero speaks. The container is invisible — no
+   background, no border, no tail — so the speaking hero reads as a
+   floating portrait + line of dialogue against the scene. Layout.ts
+   guarantees only one speech is in the feed at a time and enforces a
+   minimum-visible duration so the line persists long enough to read. --- */
+.hero-speech-feed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* No top margin: this region occupies the SAME fixed footprint as
+     .narrator-text (which it replaces when a hero/enemy speaks — see the
+     :has() rule above), starting flush at the narrator window's pad-top.
+     Matching footprints keep the .dialog-skip-row below it at a constant Y
+     whether the beat is narration or speech. box-sizing keeps the padding
+     inside --dialogue-zone-h; a taller bubble scrolls inside the box. */
+  margin: 0 auto;
+  padding: clamp(8px, 1.2vh, 14px) 22px;
+  max-width: min(640px, 92vw);
+  height: var(--dialogue-zone-h);
+  box-sizing: border-box;
+  flex: none;
+  overflow: auto;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero-speech-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  /* Re-introduce a soft halo so the type stays readable against the
+     scene now that the parchment plaque is gone. */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.9);
+  color: #e8dfc8;
+  font-family: var(--font-body);
+  /* Match the narrator-text size so hero dialogue reads at the same scale as
+     the DM's narration (both occupy the same below-board slot). */
+  font-size: clamp(15px, min(1.8vw, 2.3vh), 20px);
+  line-height: 1.42;
+}
+
+/* Portrait column: hero name stacked directly above the avatar. The
+   column keeps a fixed width so the name doesn't stretch the row when
+   it's longer than the avatar tile. */
+.hero-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* Head crop: matches .event-avatar's stamped-iron portrait-frame language
+   at a slightly larger tile (36×36, 108px sprite scale). Iron rim + gold
+   pinstripe + iron base + soft drop shadow read as a riveted dialog
+   portrait set into the speech plaque. */
+.hero-head {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  background-size: 108px 108px;
+  background-position: -36px -10px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  border: none;
+  border-radius: 0;
+  background-color: var(--iron-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.35),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    0 2px 4px rgba(0, 0, 0, 0.75);
+  /* Margin matches the extra extent the layered ring adds (3px) so the
+     portrait doesn't crash into neighboring text. */
+  margin: 3px;
+}
+.hero-head-placeholder {
+  background: var(--wood-deep);
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.20),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--wood-mid),
+    0 0 0 3px var(--iron-dark);
+}
+
+/* Monster portraits: their sprites aren't humanoid (e.g. the giant rat /
+   king rat), so the .hero-head humanoid head-crop above (108px scale, fixed
+   -36px/-10px offset) clips the face to a top sliver. Instead reuse the
+   turn-order coin's monster framing (`.turn-order-avatar`): a gentler 180%
+   zoom positioned `center 18%` lands the face/head of the upper-center rat
+   sprites in the tile — a real portrait, not the full body. */
+.hero-head--monster {
+  background-size: 180% 180%;
+  background-position: center 18%;
+}
+
+.hero-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #f0c270;
+  /* Small-caps + extra letter-spacing makes the hero name feel like a
+     stamped name tag perched above the portrait. */
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  font-size: 0.88em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hero-text {
+  font-weight: 400;
+  color: #f0e6d0;
+  font-style: italic;
+  overflow-wrap: break-word;
+  word-break: normal;
+  /* Sits beside the portrait column and vertically centers against it
+     thanks to the parent `.hero-speech-line`'s `align-items: center`. */
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: center;
+}
+
+/* Echo of the player's free-text "describe" submission, rendered just under
+   the narrator line for in-character submissions. Warmer gold + non-italic
+   + smaller, so the player can read both what they said and what the DM
+   said at a glance. Cleared once the DM speaks again. */
+.player-echo {
+  color: #f0c270;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+  margin-top: 10px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+.player-echo::before { content: "\201C"; }
+.player-echo::after  { content: "\201D"; }
+/* DM-target variant: rendered ABOVE the narrator text as a compact
+   "Player asked" tag followed by the question in italic quotes. The DM's
+   reply lives in `.narrator-text` (typewriter), so this block only carries
+   the prologue. No max-height / scroll — the question is one line, the
+   answer is what owns the long-form slot below. */
+.player-echo--dm {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  color: #d0c8b4;
+  font-style: normal;
+  width: 100%;
+  /* Tighten the gap above (the board frame ends here) and leave room below
+     before the narrator text starts typewriting, so the question and the
+     answer read as a stacked pair. */
+  margin: 0 0 8px;
+}
+.player-echo--dm::before,
+.player-echo--dm::after { content: none; }
+.player-echo-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: min(640px, 92vw);
+}
+.player-echo--dm .player-echo-text {
+  font-style: italic;
+  /* Italic quotes around the question — DM reply has no quotes; the
+     italic narrator line below speaks for itself. Nudged a touch larger to
+     match the bigger label, with the same dark glow the pill used to give
+     so the question stays legible over the board art on its own. */
+  font-size: 16px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+.player-echo--dm .player-echo-text::before { content: "\201C"; }
+.player-echo--dm .player-echo-text::after  { content: "\201D"; }
+.player-echo-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* No pill — a clean gold pixel-font label that floats over the board art
+     like a quest-log annotation. The gold gradient background + inset-bevel
+     "border" are gone; the dark glow below carries legibility over the art
+     in their place. Sized a touch larger than the old chip so the label
+     reads as the prologue heading to the question, not buried metadata. */
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--gold-glow);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+.player-echo-indicator-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+.player-echo-indicator-label {
+  line-height: 1;
+}
+
+/* ===========================================================================
+   DM's Aside — out-of-character Q&A margin slip
+   ---------------------------------------------------------------------------
+   A folded-parchment note pinned to the LEFT viewport edge: the meta mirror
+   of the right-hand Event Log drawer. It holds the player's OOC question and
+   the DM's reply OFF the in-fiction narrator stage, so a DM side-answer never
+   overwrites the story narration below the board. position:fixed + vertical
+   centering keeps it clear of the centered board on wide screens; a small-
+   screen rule re-docks it to the bottom-left so it never crowds a board that
+   has eaten the width.
+   =========================================================================== */
+.dm-aside {
+  position: fixed;
+  left: clamp(8px, 1.4vw, 22px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;               /* over the board, under the Event Log drawer (20) */
+  width: clamp(196px, 17vw, 264px);
+  max-height: 72vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+  pointer-events: auto;
+  user-select: none;
+  color: #f0e6d0;
+  font-family: var(--font-body);
+  /* Aged-parchment plank with the stamped-iron + gold-pinstripe ring shared
+     by the chat overlay / event-log spine, so it reads as the same UI set. */
+  background:
+    linear-gradient(180deg, rgba(34, 25, 15, 0.96) 0%, rgba(19, 12, 8, 0.97) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.20),
+    inset 0 0 14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--wood-mid),
+    0 0 0 3px var(--iron-dark),
+    0 0 0 4px var(--gold-band),
+    0 0 0 5px var(--iron-dark),
+    6px 8px 20px rgba(0, 0, 0, 0.7);
+  scrollbar-width: thin;
+  scrollbar-color: var(--wood-mid) transparent;
+  animation: dm-aside-in 300ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.dm-aside::-webkit-scrollbar        { width: 8px; }
+.dm-aside::-webkit-scrollbar-track  { background: transparent; }
+.dm-aside::-webkit-scrollbar-thumb  { background: var(--wood-mid); border-radius: 0; }
+
+@keyframes dm-aside-in {
+  from { opacity: 0; transform: translate(-18px, -50%); }
+  to   { opacity: 1; transform: translate(0, -50%); }
+}
+
+.dm-aside-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dm-aside-rune {
+  font-size: 16px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+.dm-aside-title {
+  font-family: var(--font-body);
+  font-size: 17px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-glow);
+  text-shadow: 0 1px 0 var(--iron-deep), 0 0 5px rgba(240, 194, 112, 0.22);
+}
+
+/* Dismiss "×" — a mini stamped-iron tile pushed to the header's right edge,
+   same construction language as the Event Log's close button so the two
+   "close this panel" affordances read as one set. */
+.dm-aside-dismiss {
+  margin-left: auto;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #2a1d0e 0%, #1a120a 100%);
+  color: #f0e6d0;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-trim),
+    0 0 0 3px var(--iron-dark);
+  transition: filter 80ms steps(2, end);
+}
+.dm-aside-dismiss:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    inset 0 0 5px rgba(240, 194, 112, 0.2),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-glow),
+    0 0 0 3px var(--iron-dark);
+}
+.dm-aside-dismiss:active {
+  transform: translate(1px, 1px);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-lo),
+    inset -1px -1px 0 0 var(--bevel-hi),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-trim),
+    0 0 0 3px var(--iron-dark);
+}
+.dm-aside-dismiss:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 3px;
+}
+
+/* Hairline gold rule + diamond pip — echoes the board frame + loader rule. */
+.dm-aside-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold-trim);
+  margin-bottom: 2px;
+}
+.dm-aside-rule-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold-trim) 35%,
+    var(--gold-band) 50%,
+    var(--gold-trim) 65%,
+    transparent 100%
+  );
+}
+.dm-aside-rule-pip {
+  font-size: 9px;
+  color: var(--gold-band);
+  text-shadow: 0 0 3px rgba(240, 194, 112, 0.3);
+}
+
+.dm-aside-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dm-aside-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Left rule that color-codes the speaker — gold for the player, cool
+     parchment-blue for the DM — so the two voices read apart at a glance. */
+  padding-left: 9px;
+  border-left: 2px solid transparent;
+}
+.dm-aside-turn--you { border-left-color: rgba(240, 194, 112, 0.55); }
+.dm-aside-turn--dm  { border-left-color: rgba(150, 178, 196, 0.5); }
+
+.dm-aside-speaker {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.dm-aside-turn--you .dm-aside-speaker { color: #d8b873; }
+.dm-aside-turn--dm  .dm-aside-speaker { color: #9db4c4; }
+
+.dm-aside-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+}
+.dm-aside-text--question {
+  font-style: italic;
+  color: #efe3c8;
+}
+.dm-aside-text--question::before { content: "\201C"; }
+.dm-aside-text--question::after  { content: "\201D"; }
+.dm-aside-text--reply {
+  color: #f0e6d0;
+  /* Fades + rises in when the DM's answer replaces the pending line. */
+  animation: dm-aside-reply-in 280ms ease both;
+}
+@keyframes dm-aside-reply-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Pending: "consults the tomes…" with marching dots (reuses the loader's
+   dot cadence) until the reply lands. */
+.dm-aside-pending {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #b9ad94;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+.dm-aside-dots {
+  display: inline-block;
+  margin-left: 0.05em;
+  letter-spacing: 0.1em;
+}
+.dm-aside-dots > span {
+  opacity: 0.2;
+  animation: game-loading-dot 1.4s ease-in-out infinite;
+}
+.dm-aside-dots > span:nth-child(2) { animation-delay: 220ms; }
+.dm-aside-dots > span:nth-child(3) { animation-delay: 440ms; }
+
+/* Narrow viewports: the centered board can fill the width, so re-dock the
+   slip to the bottom-left as a compact card instead of floating mid-height
+   over the board. */
+@media (max-width: 900px) {
+  .dm-aside {
+    top: auto;
+    bottom: 12px;
+    transform: none;
+    width: min(72vw, 320px);
+    max-height: 40vh;
+    animation: dm-aside-in-compact 300ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  @keyframes dm-aside-in-compact {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: none; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-aside,
+  .dm-aside-text--reply { animation: none; }
+  .dm-aside-dots > span  { animation: none; opacity: 0.7; }
+}
+
+/* --- Roll panel: minimal framed dice readout. Two dice + verdict + damage,
+   nothing else. Frame mirrors .chat-toggle. Rendered INLINE inside
+   .narrator-window's vertical stack so it sits between the hero-speech feed
+   and the player input. Horizontal centering comes from the parent's
+   `text-align: center` (which centers inline-block / inline-flex children).
+   `roll-show` plays an entrance pulse, then a hold while the dice spin and
+   the verdict reveals, then a fade-out. When the 5s timer in Layout.ts
+   fires, the element is unmounted entirely. --- */
+.roll-panel {
+  position: relative;
+  /* Block-level flex with a CONCRETE width — previously `inline-flex`, which
+     made the panel hug its content. That caused `.roll-arena`'s `flex: 1 1 0`
+     children to have no defined width to split, so the attacker and defender
+     halves were sized by content alone and any asymmetry (e.g. defender name
+     "Giant Rat" being wider than attacker "Bran") cascaded into one side's
+     dice strip wrapping while the other didn't. With a fixed panel width,
+     the two sides truly split the arena evenly. `margin: ... auto` centers
+     the block within the narrator-window's centered column. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(520px, 92%);
+  box-sizing: border-box;
+  /* Top margin is intentionally larger than bottom: it sets the visual gap
+     between the dialog block (narrator text / hero-speech feed / player
+     echo) above and the dice readout itself, so the rolled dice don't feel
+     glued to the last line of dialogue. */
+  margin: clamp(14px, 2.4vh, 28px) auto clamp(6px, 0.8vh, 12px);
+  padding: 8px 18px;
+  background:
+    linear-gradient(180deg, rgba(36, 24, 14, 0.98) 0%, rgba(18, 12, 8, 0.98) 100%);
+  color: #f0e6d0;
+  font-family: var(--font-body);
+  line-height: 1.2;
+  pointer-events: auto;
+  user-select: none;
+  /* Iron-bound dice plaque — same construction as the describe panel, with
+     the gold pinstripe trim a touch brighter to read as "ceremonial" since
+     this only appears at the moment of a resolved roll. */
+  box-shadow:
+    inset 0 0 0 1px rgba(240, 194, 112, 0.28),
+    inset 0 0 8px rgba(122, 80, 30, 0.2),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 3px var(--wood-light),
+    0 0 0 4px var(--wood-deep),
+    0 0 0 6px var(--wood-mid),
+    0 0 0 7px var(--iron-dark),
+    0 0 0 8px var(--gold-glow),
+    0 0 0 9px var(--iron-dark),
+    0 6px 18px rgba(0, 0, 0, 0.7);
+  animation: roll-show 3500ms ease-out forwards;
+}
+/* Corner rivets matching the prompt-panel + canvas-wrapper family. */
+.roll-panel::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+  z-index: 2;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(circle at 5px 5px,
+      var(--gold-glow) 0 1px, var(--gold-trim) 1px 2.2px,
+      var(--iron-deep) 2.2px 3.2px, transparent 3.2px),
+    radial-gradient(circle at calc(100% - 5px) 5px,
+      var(--gold-glow) 0 1px, var(--gold-trim) 1px 2.2px,
+      var(--iron-deep) 2.2px 3.2px, transparent 3.2px),
+    radial-gradient(circle at 5px calc(100% - 5px),
+      var(--gold-glow) 0 1px, var(--gold-trim) 1px 2.2px,
+      var(--iron-deep) 2.2px 3.2px, transparent 3.2px),
+    radial-gradient(circle at calc(100% - 5px) calc(100% - 5px),
+      var(--gold-glow) 0 1px, var(--gold-trim) 1px 2.2px,
+      var(--iron-deep) 2.2px 3.2px, transparent 3.2px);
+}
+
+/* Entrance pulse 0–4 %, settle 4–90 % (≈ 3.0s of full-opacity hold covering
+   the rolling + reading window at the 3500ms wrapper duration), fade 90–100 %
+   (≈ 350ms). The verdict (`roll-result-reveal` at line ~1679) pops at an
+   absolute 2400ms and finishes its 420ms animation at 2820ms, leaving ~330ms
+   of full-opacity time before the fade begins — tight but readable. No
+   translateX(-50%) here — the panel is inline-flex now and the parent's
+   `text-align: center` keeps it centered. */
+@keyframes roll-show {
+  0%   { opacity: 0; transform: scale(0.96); filter: brightness(1.4); }
+  2%   { opacity: 1; transform: scale(1.02); filter: brightness(1.15); }
+  4%   { opacity: 1; transform: scale(1.00); filter: brightness(1.00); }
+  90%  { opacity: 1; transform: scale(1.00); }
+  100% { opacity: 0; transform: scale(1.00); }
+}
+
+.roll-line {
+  display: inline-flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: center;
+}
+
+/* --- Arena: attacker portrait + dice  |  VS  |  defender dice + portrait
+   --------------------------------------------------------------------------
+   Horizontal flexbox laying out both duellists symmetrically around the
+   central VS divider. Each side keeps its dice strip adjacent to the VS
+   bar so the player reads "these dice are mine, those are theirs" without
+   having to scan back to the avatar. The defender side is mirrored
+   (dice-then-portrait) so the conflict reads left-to-right as a duel. */
+.roll-arena {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Claim the panel's full width so both sides (each `flex: 1 1 0`) have a
+     real, equal space to split — otherwise content sizing makes the
+     asymmetry between attacker and defender propagate into one side
+     wrapping while the other doesn't. */
+  width: 100%;
+}
+
+.roll-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Allow the dice strip to wrap if a side has many dice. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+.roll-side--attacker { justify-content: flex-end; }
+.roll-side--defender { justify-content: flex-start; }
+
+.roll-side-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* FIXED width so attacker and defender portrait slots are visually
+     identical regardless of name length. Without this, a longer name
+     (e.g. "Giant Rat" vs "Bran") would let the portrait column expand
+     up to the name's max-width, eat into that side's leftover space,
+     and force ONLY that side's dice strip to wrap — asymmetric stacking. */
+  flex: 0 0 56px;
+  width: 56px;
+}
+
+/* Portrait crop matches the in-game `.hero-head` portrait frame at a
+   compact size (28×28) so the dice panel doesn't overpower the narrator
+   block above it. Sprite scale (84px) and offset (-28px -8px) keep the
+   head centered for the hero/monster south-facing PNGs. */
+.roll-avatar {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  background-size: 84px 84px;
+  background-position: -28px -8px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  background-color: var(--iron-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.38),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    0 1px 3px rgba(0, 0, 0, 0.75);
+  margin: 2px;
+}
+.roll-avatar--placeholder {
+  background: var(--wood-deep);
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.20),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--wood-mid),
+    0 0 0 3px var(--iron-dark);
+}
+
+.roll-side-name {
+  font-family: var(--font-body);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  font-size: 0.72em;
+  line-height: 1;
+  font-weight: 700;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+.roll-side-name--hero  { color: #f0c270; }
+.roll-side-name--enemy { color: #d97a6a; }
+.roll-side-name--dm    { color: #c0b8a4; }
+
+/* The dice strip: one entity's full pool, all dice spinning in unison.
+   Wrap so a 5-die pool doesn't push the layout off-canvas. Claims the
+   leftover space inside `.roll-side` (after the fixed-width portrait)
+   so both sides allocate identical room to their dice — wrapping then
+   happens symmetrically (or not at all) on both sides. */
+.roll-dice-strip {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+.roll-dice-strip--empty {
+  color: #6a624a;
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* The VS bar between the two sides. Compact gold pill — the dice + portraits
+   already provide the framing, so the VS just needs to mark the seam. */
+.roll-vs {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  background: linear-gradient(180deg, rgba(60, 42, 18, 0.85), rgba(28, 18, 8, 0.85));
+  box-shadow:
+    inset 0 0 0 1px var(--gold-band),
+    0 0 0 1px var(--iron-dark);
+  font-family: var(--font-combat);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #f0c270;
+  text-shadow: 0 0 3px rgba(240, 194, 112, 0.28);
+}
+.roll-vs-text { display: inline-block; transform: skewX(-10deg); }
+
+/* --- Per-entity dice-roll animation ---------------------------------------
+   All dice on the same strip share one delay variable so they tumble in
+   sync (the player reads it as "this entity rolled their pool"). The
+   defender strip's delay is offset by 1.2s so it starts only after the
+   attacker has settled — preserves the call-and-response choreography of
+   the previous design while supporting N dice per side. --- */
+.roll-dice-strip--attacker { --roll-side-delay: 0ms; }
+.roll-dice-strip--defender { --roll-side-delay: 1200ms; }
+
+.roll-die {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f0e6d0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: background 200ms, box-shadow 200ms;
+}
+/* The "winning" die (the actual top-of-pool the engine reported) glows
+   gold once the strip has settled, so the player can see which die counted.
+   We delay the glow to land WITH the number-reveal pop so it doesn't draw
+   attention before the value is even readable. */
+.roll-die--top {
+  animation: roll-die-highlight 400ms ease-out calc(var(--roll-side-delay, 0ms) + 1200ms) both;
+}
+@keyframes roll-die-highlight {
+  0%   { background: transparent;                box-shadow: none; }
+  100% { background: rgba(240, 194, 112, 0.18);  box-shadow: inset 0 0 0 1px rgba(240, 194, 112, 0.55), 0 0 8px rgba(240, 194, 112, 0.35); }
+}
+
+.roll-die-emoji {
+  display: inline-block;
+  /* `transform-origin: center` keeps the glyph spinning in place. */
+  transform-origin: 50% 50%;
+  /* Net 4 forward revolutions over 1.2s, but the path reverses direction
+     several times — forward burst, backspin, forward, backspin — so it
+     reads as a real die tumbling rather than a clean motorized spin.
+     Scale jitter + tiny translate noise reinforce the chaos. `linear`
+     timing lets the irregular keyframe spacing dictate the rhythm.
+     `forwards` parks at 1440deg (= 0deg visually) so the glyph doesn't
+     snap back. */
+  animation: roll-die-spin 1200ms linear var(--roll-side-delay, 0ms) forwards;
+}
+.roll-die-number {
+  /* Hidden until the spin completes; the keyframe handles the pop-in. */
+  opacity: 0;
+  display: inline-block;
+  transform-origin: 50% 60%;
+  animation: roll-die-reveal 320ms cubic-bezier(.34, 1.56, .64, 1) calc(var(--roll-side-delay, 0ms) + 1200ms) forwards;
+}
+
+@keyframes roll-die-spin {
+  0%   { transform: rotate(0deg)     scale(1.00) translate(0,    0);    }
+  10%  { transform: rotate(320deg)   scale(1.18) translate(-3px, -2px); } /* forward burst */
+  20%  { transform: rotate(140deg)   scale(1.06) translate(2px,  -3px); } /* reverse: -180deg */
+  32%  { transform: rotate(580deg)   scale(1.22) translate(3px,  2px);  } /* forward: +440deg */
+  44%  { transform: rotate(380deg)   scale(0.96) translate(-3px, 1px);  } /* reverse: -200deg */
+  56%  { transform: rotate(880deg)   scale(1.20) translate(2px,  -3px); } /* forward: +500deg */
+  68%  { transform: rotate(700deg)   scale(1.04) translate(-2px, 3px);  } /* reverse: -180deg */
+  80%  { transform: rotate(1200deg)  scale(1.16) translate(3px,  -1px); } /* forward: +500deg */
+  90%  { transform: rotate(1080deg)  scale(1.06) translate(-1px, 1px);  } /* reverse: -120deg */
+  100% { transform: rotate(1440deg)  scale(1.00) translate(0,    0);    } /* settle: +360deg, 4 net turns */
+}
+@keyframes roll-die-reveal {
+  0%   { opacity: 0; transform: scale(0.55); }
+  60%  { opacity: 1; transform: scale(1.20); }
+  100% { opacity: 1; transform: scale(1.00); }
+}
+
+.roll-result {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  /* Verdict is held until both dice land (left settles at 1.2s, right at
+     2.4s); reveal animation kicks in at 2.4s with a satisfying pop. */
+  opacity: 0;
+  animation: roll-result-reveal 420ms cubic-bezier(.34, 1.56, .64, 1) 2400ms forwards;
+}
+@keyframes roll-result-reveal {
+  0%   { opacity: 0; transform: scale(0.85); filter: brightness(1.6); }
+  60%  { opacity: 1; transform: scale(1.15); filter: brightness(1.20); }
+  100% { opacity: 1; transform: scale(1.00); filter: brightness(1.00); }
+}
+/* Verdict glyph — matches the on-board flashRoll callout
+   (web/components/RollOverlay.ts) so the dice panel and the in-game label
+   share one arcade KoF "stamped onto the screen" look:
+     HIT  → vertical yellow→orange→red gradient, fat italic glyph, heavy
+            black outline + drop shadow.
+     MISS → flat gray, smaller, thinner outline.
+   `transform: skewX(-10deg)` mirrors the Pixi `label.skew.set(-0.18, 0)`
+   in RollOverlay so the italic slant reads even with Jersey 10's upright
+   glyphs.
+
+   The outline is built with `-webkit-text-stroke` + `paint-order: stroke fill`
+   so the stroke renders BELOW the gradient fill (otherwise text-shadow
+   offsets paint atop the gradient and fill the glyph solid black). The soft
+   depth shadow runs through `filter: drop-shadow` for the same reason —
+   text-shadow paints atop the gradient and would also be obliterated. */
+.roll-result .roll-verdict {
+  display: inline-block;
+  font-family: var(--font-combat);
+  font-style: italic;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  transform: skewX(-10deg);
+}
+
+/* Outline strategy: a chained `filter: drop-shadow(...)` rather than
+   `-webkit-text-stroke` or `text-shadow`:
+     - text-shadow paints copies of the glyph ATOP the background-clip:text
+       gradient (per CSS painting order); multi-direction offsets fully
+       cover the gradient, rendering it solid black.
+     - `-webkit-text-stroke` on Jersey 10 at any width visible enough to
+       read (~2-3px) eats nearly the whole glyph body, because the pixel
+       font's strokes are themselves only ~4-5px wide at 34px. The stroke
+       consumes the gradient.
+     - Chained drop-shadow operates on the element's alpha layer: each
+       pass offsets the previous result and composites it UNDER the opaque
+       pixels, so the gradient interior stays intact and only the outline
+       halo + soft depth shadow paint outside it. */
+.roll-result.hit .roll-verdict {
+  font-size: 22px;
+  font-weight: 900;
+  background: linear-gradient(
+    180deg,
+    #fff6a3 0%,
+    #ffe23a 35%,
+    #ff7a14 70%,
+    #c61f12 100%
+  );
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  filter:
+    drop-shadow( 1.5px   0    0 #000)
+    drop-shadow(-1.5px   0    0 #000)
+    drop-shadow( 0     1.5px  0 #000)
+    drop-shadow( 0    -1.5px  0 #000)
+    drop-shadow( 0     2px   2px rgba(0, 0, 0, 0.9));
+}
+
+.roll-result.miss .roll-verdict {
+  font-size: 17px;
+  font-weight: 700;
+  color: #b8c0c8;
+  filter:
+    drop-shadow( 1px    0    0 #000)
+    drop-shadow(-1px    0    0 #000)
+    drop-shadow( 0     1px   0 #000)
+    drop-shadow( 0    -1px   0 #000)
+    drop-shadow( 0     1.5px 1.5px rgba(0, 0, 0, 0.85));
+}
+
+/* --- Turn-order tape -----------------------------------------------------
+   Heraldic banner that sits ABOVE the board (not overlapping) during combat
+   and acts as a continuous tape: every combatant from the engine's order
+   gets a fixed-width slot, the active actor anchors at the lead position,
+   and on turn change the whole track translates right-to-left by exactly
+   one slot. Spent (passed) slots clip off the left edge of the viewport;
+   upcoming slots are pre-mounted to the right.
+
+   Dead combatants stay in their slot — coin desaturates to grey and a red
+   "DEAD" badge stamps over them, so the spatial ordering never shifts when
+   someone is KO'd. The frame reuses the iron-band + gold-trim tokens so it
+   reads as the same medieval object family as the dice plaque. -------- */
+.turn-order-bar {
+  /* Gap between slots — also the horizontal space the chevron sits in.
+     Slots are intrinsic-width (sized to avatar + name); the slide offset
+     is measured per render and written to --turn-offset in JS, so there
+     is no need for a --slot-step constant. */
+  --slot-gap: 36px;
+
+  /* Absolutely positioned into the .board-column's reserved slot at the
+     top. The bar is now frame-less and transparent — coins, names, and
+     chevrons float directly over the page so the procession reads as the
+     content itself, not a panel. */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  /* Bar's outer width matches the board canvas. --canvas-displayed-w is set
+     on :root by Board.ts via ResizeObserver every time the canvas resizes,
+     so the ribbon stretches and shrinks in lockstep with the board. */
+  width: var(--canvas-displayed-w, 704px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  animation: turn-order-bar-show 320ms ease-out both;
+}
+@keyframes turn-order-bar-show {
+  /* translateX(-50%) preserved across both keyframes so the absolutely-
+     positioned bar stays horizontally centered while the Y offset
+     animates from -6px to 0. */
+  0%   { opacity: 0; transform: translate(-50%, -6px); }
+  100% { opacity: 1; transform: translate(-50%, 0);    }
+}
+
+/* Viewport: stretches to fill the bar between the side paddings. Clips
+   slots that have passed off the left and slots beyond the visible window
+   on the right. Edge-fading mask keeps the tape feeling infinite. */
+.turn-order-viewport {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  overflow: hidden;
+  /* Left padding gives the active coin's gold glow / outer ring some
+     breathing room so it isn't clipped by overflow:hidden when the
+     active slot sits flush at the lead position (translate puts its
+     left edge at x=0 of the content area). */
+  padding-left: 10px;
+  /* Right-edge fade only — signals "more combatants ahead". The left edge
+     is hard-clipped so the active actor sits flush at the lead position
+     with no dark vignette eating into its avatar. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0,
+    #000 calc(100% - 32px),
+    transparent 100%
+  );
+          mask-image: linear-gradient(
+    90deg,
+    #000 0,
+    #000 calc(100% - 32px),
+    transparent 100%
+  );
+}
+
+/* The track is wider than the viewport. Its translate is driven by the
+   --turn-offset pixel value, which TurnOrderBar.ts writes after each
+   render by measuring the active slot's offsetLeft. The inline
+   --turn-cursor is a render-time hint for tests and debugging — it does
+   NOT drive the visual position. The transition on transform IS the
+   slide animation. */
+.turn-order-track {
+  display: flex;
+  align-items: center;
+  gap: var(--slot-gap);
+  transform: translateX(var(--turn-offset, 0px));
+  transition: transform 480ms cubic-bezier(.45, 0, .25, 1);
+  will-change: transform;
+}
+
+/* Single slot: intrinsic width — the slot is sized by its content (coin +
+   info column), so long names like "Giant Rat" aren't truncated and short
+   names don't leave dead air before the chevron. Coin and name sit
+   horizontally; the info column stacks name above the optional DEAD
+   badge. Slot is `position: relative` so the chevron ::after can anchor
+   itself in the gap that follows, and `min-height` so the chevron has
+   room to stretch floor-to-ceiling of the bar's interior. */
+.turn-order-slot {
+  position: relative;
+  flex: 0 0 auto;
+  /* Tall enough to give the active 42×42 coin's pulse halo (extends ~8px
+     outward at peak) and bottom-edge status icons (Kael's flame, etc.)
+     vertical breathing room — the viewport clips with overflow:hidden, so
+     anything beyond the slot's outer box gets cropped. The chevron is
+     shrunk independently via top/bottom insets below, so the bar still
+     reads as visually slim at this height. */
+  min-height: 60px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  transition:
+    opacity   320ms ease-out,
+    filter    320ms ease-out;
+}
+
+/* Info column: stacks the name above the optional DEAD badge so the badge
+   doesn't push name width sideways into the chevron's territory. */
+.turn-order-info {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* Heraldic gold chevron — rendered as inline SVG (not a glyph) so the
+   geometry is crisp at any size and fills the bar floor-to-ceiling. The
+   SVG is three stacked strokes: a dark iron backing for depth, a vertical
+   gold gradient for the body, and a soft highlight along the upper leg
+   for the embossed sheen. Painted via ::after so it slides with the track
+   (the chevron lives inside the slot, which lives inside the track — the
+   track's transform carries everything along). The negative `right` plus
+   `translateX(50%)` centers the SVG in the --slot-gap that follows the
+   slot, and `top: 0; bottom: 0` stretches it to the full interior height
+   of the bar so it reads as a tall structural separator, not a glyph. */
+.turn-order-slot:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--slot-gap) / -2);
+  /* Vertical insets crop the chevron's height — it now reads as a slim
+     divider between coins instead of stretching floor-to-ceiling of the
+     slot. With slot min-height 60px and 18px insets, the chevron is ~24px
+     tall: shorter than the inactive coin (32px), so it never competes
+     visually with the portraits. */
+  top: 18px;
+  bottom: 18px;
+  /* Width is narrower than --slot-gap so the chevron has ~7px of clearance
+     on each side, instead of touching the next avatar's coin. */
+  width: 16px;
+  transform: translateX(50%);
+  /* SVG with path tips pushed to the viewBox edges (y=2 and y=40 in a
+     0..42 viewBox, plus square stroke caps that overshoot by half the
+     stroke width). Combined with `background-size: contain`, the chevron
+     art reaches floor-to-ceiling of its 58px-tall slot. Three stacked
+     strokes — iron-dark backing for depth, a vertical gold gradient for
+     the body, and a brief highlight along the upper leg — give the
+     embossed heraldic feel without rasterised PNG assets. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 42' preserveAspectRatio='xMidYMid meet'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%25' stop-color='%23f7dc94'/><stop offset='46%25' stop-color='%23d7ab57'/><stop offset='54%25' stop-color='%23a8802f'/><stop offset='100%25' stop-color='%23553c11'/></linearGradient></defs><path d='M3 2 L13 21 L3 40' fill='none' stroke='%23110a05' stroke-width='6' stroke-linejoin='miter' stroke-linecap='square'/><path d='M3 2 L13 21 L3 40' fill='none' stroke='url(%23g)' stroke-width='3.6' stroke-linejoin='miter' stroke-linecap='square'/><path d='M3.5 3 L12.4 20.5' fill='none' stroke='rgba(255,242,205,0.6)' stroke-width='1' stroke-linejoin='miter' stroke-linecap='square'/></svg>");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+}
+/* Chevron after a passed slot dims along with it — keeps the visual
+   coherence as the slot fades out off the left edge. */
+.turn-order-slot--passed:not(:last-child)::after {
+  opacity: 0.35;
+}
+/* Chevron after a dead slot keeps gold so the tape reads as a continuous
+   chain even when someone in the middle has dropped — the chevron is part
+   of the structural ribbon, not the character status. */
+
+/* Fixed-size cell that reserves layout space for the LARGEST coin state
+   (active = 42×42). The coin inside grows/shrinks from 32 → 42 visually,
+   but the cell's outer box stays constant — so the slot's intrinsic
+   width doesn't shift when its character becomes active and the
+   surrounding slot positions don't drift mid-transition. That's what
+   kills the small "correction" slide that used to appear at every turn
+   change as offsetLeft of later slots changed while the active coin
+   grew. */
+.turn-order-coin-cell {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+/* Coin: round gold-bound portrait. */
+.turn-order-coin {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--iron-deep);
+  box-shadow:
+    inset 0 0 0 1px var(--iron-dark),
+    0 0 0 1.5px var(--gold-trim),
+    0 1px 0 var(--iron-deep),
+    0 2px 4px rgba(0, 0, 0, 0.65);
+  transition:
+    width      280ms cubic-bezier(.34, 1.56, .64, 1),
+    height     280ms cubic-bezier(.34, 1.56, .64, 1),
+    box-shadow 280ms ease-out,
+    filter     280ms ease-out;
+}
+.turn-order-coin-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(240, 194, 112, 0);
+}
+.turn-order-avatar {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background-size: 180% 180%;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.turn-order-avatar--monster {
+  transform: scaleX(-1);    /* face into the tape */
+}
+.turn-order-avatar--placeholder {
+  background: linear-gradient(180deg, var(--wood-mid), var(--wood-deep));
+}
+
+/* Name label: heraldic uppercase + letter-spacing. Width is intrinsic — the
+   name renders in full (no ellipsis) so the slot grows to fit "Giant Rat"
+   or longer; the chevron always lands immediately after the name's last
+   glyph plus the --slot-gap of breathing room. */
+.turn-order-name {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #f0e6d0;
+  text-shadow: 0 1px 0 #000, 0 0 4px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  transition: color 280ms ease-out, font-size 280ms ease-out;
+}
+.turn-order-slot--monster .turn-order-name { color: #f3d2c4; }
+.turn-order-slot--hero    .turn-order-name { color: #f5e8c4; }
+
+/* Active slot — current actor. Larger coin, brighter ring, slow heartbeat. */
+.turn-order-slot--active .turn-order-coin {
+  width: 42px;
+  height: 42px;
+  box-shadow:
+    inset 0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-glow),
+    0 0 0 3px var(--iron-dark),
+    0 0 5px rgba(240, 194, 112, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.8);
+}
+.turn-order-slot--active .turn-order-coin-ring {
+  animation: turn-order-pulse 1600ms ease-in-out infinite;
+}
+@keyframes turn-order-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(240, 194, 112, 0.55); }
+  50%      { box-shadow: 0 0 0 8px rgba(240, 194, 112, 0);    }
+}
+.turn-order-slot--active .turn-order-name {
+  font-size: 12px;
+  color: var(--gold-glow);
+  text-shadow: 0 1px 0 #000, 0 0 3px rgba(240, 194, 112, 0.4);
+}
+.turn-order-slot--active .turn-order-avatar {
+  inset: 3px;
+}
+
+/* Passed slot — already acted this round. Briefly dimmed before clipping
+   off the left edge. */
+.turn-order-slot--passed {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
+
+/* Dead slot — character KO'd. Stays in place to preserve spatial ordering;
+   coin desaturates, name renders muted, and a red "DEAD" badge stamps over
+   the coin. Overrides active/passed styling. */
+.turn-order-slot--dead .turn-order-coin {
+  width: 32px;
+  height: 32px;
+  box-shadow:
+    inset 0 0 0 1px var(--iron-dark),
+    0 0 0 1.5px #4a3a30,
+    0 1px 0 var(--iron-deep),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  filter: grayscale(1) brightness(0.55);
+}
+.turn-order-slot--dead .turn-order-coin-ring {
+  animation: none;
+  box-shadow: none;
+}
+.turn-order-slot--dead .turn-order-name {
+  font-size: 11px;
+  color: #7d7066;
+  text-decoration: line-through;
+  text-decoration-color: rgba(180, 60, 50, 0.7);
+  text-decoration-thickness: 1px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 #000;
+}
+.turn-order-slot--dead .turn-order-avatar {
+  inset: 2px;
+  filter: grayscale(1) brightness(0.7);
+}
+/* Crimson "DEAD" wax-stamp tag, stacked directly under the name. The badge
+   is inline-sized to its text so it doesn't push the slot any wider than
+   the name above it. */
+.turn-order-dead-label {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #f0c0b0;
+  background: linear-gradient(180deg, #6e1a14 0%, #3a0d09 100%);
+  padding: 1px 4px;
+  border-radius: 1px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 2px rgba(180, 60, 50, 0.6),
+    0 1px 0 rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
+  align-self: flex-start;
+  flex: 0 0 auto;
+}
+/* Crossed-out coin glyph on dead slots — a small red ✕ over the avatar. */
+.turn-order-skull {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: serif;
+  font-weight: 900;
+  font-size: 22px;
+  color: rgba(220, 60, 50, 0.85);
+  text-shadow:
+    1px 0 0 #000, -1px 0 0 #000,
+    0 1px 0 #000, 0 -1px 0 #000,
+    0 0 3px rgba(180, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* --- "Order of Battle" reveal -------------------------------------------
+   A one-shot parchment-on-wood plaque mounted CENTRED over the board
+   canvas. Fires AFTER the initiative dice settle and BEFORE the looping
+   turn-order tape takes over, announcing every combatant in turn-order
+   like a herald reading a decree.
+
+   Motion is split into two phases so the plaque can hold indefinitely
+   in manual-skip mode and only fade out once the player advances:
+
+     - Default class       — fade-in (0 → 1, 300ms), then hold opacity 1
+                             (animation-fill-mode: forwards keeps the
+                             end frame visible until the class flips).
+     - `.is-dismissing`    — fade-out (1 → 0, BATTLE_ORDER_REVEAL_FADE_OUT_MS).
+                             Layout swaps this in when the user clicks
+                             the dialog Skip button, OR when the
+                             auto-skip dismiss timer fires at
+                             (BATTLE_ORDER_REVEAL_MS − fade-out).
+
+   Anchored to `.board-stage` (position:absolute, inset:0, flex-centred)
+   so the plaque lands centred on the canvas — same mounting trick as
+   the "To Arms!" combat-begins splash. */
+.battle-order-reveal {
+  /* Full-bleed, transparent positioning layer. `inset: 0` fills
+     `.board-stage` (= canvas/dice area in the real game, full stage in the
+     preview harness) so the per-die badges, anchored in PERCENT, land over
+     the matching 3D dice. No background, no frame, no blur. */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  /* Sits ABOVE the 3D dice canvas (z 20) and its frame (z 21) so the reveal
+     renders OVER the still-visible 3D dice scene during the order-reveal beat
+     (the initiative roll holds the settled dice up — see Dice3DOverlay
+     `keepVisibleAfterSettle`). Still below the board-roll-overlay (25) and the
+     combat-begins splash (26). */
+  z-index: 22;
+  animation: battle-order-fade-in 300ms ease-out forwards;
+}
+.battle-order-reveal.is-dismissing {
+  animation: battle-order-fade-out 400ms ease-in forwards;
+}
+
+/* --- Per-die combatant badges ------------------------------------------
+   One callout BADGE per combatant, anchored (`left`/`top` inline, PERCENT of
+   the stage) over the 3D die that character rolled. The badge wears the SAME
+   stamped-iron frame as the `.event-log-toggle` (LOG/REGISTRO) button — sharp
+   (square) corners, a brown gradient body, the asymmetric bevel + iron/gold/
+   iron pinstripe ring + hard pixel drop shadow — so it reads as one of the
+   top-level button family. ONE accent (gold) for every combatant — heroes and
+   monsters share the frame; only the FACE-cropped portrait (no border — the
+   head crop matches the dialogue speech portrait) tells them apart. The
+   turn-order rank rides in the Jersey-10 stamped pixel face, and a downward
+   tail points at the die. The whole overlay opacity-fades as one unit; no
+   blur — the 3D dice scene stays sharp. */
+.battle-order-badge {
+  position: absolute;
+  /* `left`/`top` (inline) mark the die's screen point. Anchor the badge above
+     it: the column is shifted up by its own height (-100%) PLUS `--badge-lift`,
+     so the tail tip floats a little NORTH of the die centre instead of landing
+     on it — the callout clears the die rather than covering it. The trailing
+     scale() is the podium grow (see `--rank1/2/3` below): with the
+     bottom-centre origin it scales ABOUT the tail tip, so a grown badge stays
+     pinned to its die. */
+  transform: translate(-50%, calc(-100% - var(--badge-lift, 14px)))
+    scale(var(--badge-scale, 1));
+  transform-origin: bottom center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Badges catch the pointer (the full-bleed `.battle-order-reveal` layer
+     stays pointer-events:none, so only the small badge bodies are hot) so a
+     hover can lift the pointed-at badge above its neighbours. */
+  pointer-events: auto;
+  /* Stacking baseline: absolutely-positioned siblings stack in DOM order
+     (later = on top); pin them all to z 1 so the hover rule below can win. */
+  z-index: 1;
+  /* Kind accent drives the pinstripe ring + tail + rank tint. */
+  --badge-accent: var(--gold-band);
+  --badge-rank: var(--gold-glow);
+  --badge-lift: 14px;
+}
+/* Hover priority — the badge under the cursor jumps to the front so its
+   portrait + rank are never clipped by an overlapping neighbour. */
+.battle-order-badge:hover {
+  z-index: 10;
+}
+/* No hero/monster border split — one gold accent for the whole party (the
+   FACE-cropped portrait is the only hero-vs-foe tell). The `--monster`
+   avatar-crop offset still applies further down (snouts sit lower). */
+
+/* Podium scaling — the first three initiative slots grow with their rank
+   (1st biggest, then 2nd, then 3rd; 4th+ stay base size) so the head of the
+   order reads at a glance off the dice. The scale rides at the END of the
+   anchor transform above, about the bottom-centre origin, so the tail tip
+   never drifts off its die. Bigger ranks also stack ABOVE smaller neighbours
+   where adjacent dice overlap the badges (baseline z 1; hover's z 10 still
+   wins). */
+.battle-order-badge--rank1 {
+  --badge-scale: 1.5;
+  z-index: 4;
+}
+.battle-order-badge--rank2 {
+  --badge-scale: 1.3;
+  z-index: 3;
+}
+.battle-order-badge--rank3 {
+  --badge-scale: 1.15;
+  z-index: 2;
+}
+
+/* Tooltip body — the SAME stamped-iron frame as the `.event-log-toggle`
+   (LOG/REGISTRO) button: sharp (square) corners, brown gradient, asymmetric
+   bevel + 1px iron rim → 2px gold pinstripe → 1px iron base ring + a hard
+   pixel drop shadow, so the callout belongs to the top-level button set. */
+.battle-order-badge-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px 5px 6px;
+  border-radius: 0;
+  background: linear-gradient(180deg, #2a1d0e 0%, #1a120a 55%, #120a05 100%);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--badge-accent),
+    0 0 0 3px var(--iron-dark),
+    3px 3px 0 0 var(--iron-deep),
+    5px 7px 14px rgba(0, 0, 0, 0.6);
+}
+
+/* Downward tail — the pinstripe carried into a pointer (accent triangle, so
+   it reads as the gold/crimson ring flowing down to the die). */
+.battle-order-badge-tail {
+  width: 0;
+  height: 0;
+  margin-top: 1px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid var(--badge-accent);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55));
+}
+
+/* Portrait — FACE crop (head only), the same technique + ratios as the
+   dialogue speech portrait `.hero-head` (sprite scaled 3×, offset onto the
+   head). NO border: the body's frame is the framing. */
+.battle-order-badge-avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  background-size: 96px 96px;          /* 3× the 32px window → trims to head */
+  background-position: -32px -8px;      /* centre column, head row */
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  border-radius: 0;
+}
+.battle-order-badge-avatar--placeholder {
+  background:
+    repeating-linear-gradient(45deg, var(--wood-mid) 0 4px, var(--wood-deep) 4px 8px);
+}
+/* Monster sprites carry their face lower than humanoid heroes (ears on top,
+   snout below), so the head crop drops further down the sprite to centre the
+   FACE in the window instead of cropping to the ears. */
+.battle-order-badge--monster .battle-order-badge-avatar {
+  background-position: -32px -19px;
+}
+
+/* Turn-order rank — Jersey-10 pixel face, kind-tinted, stamped into the
+   panel with the same gold-on-iron treatment the rest of the UI uses. */
+.battle-order-badge-rank {
+  font-family: var(--font-combat);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--badge-rank);
+  text-shadow:
+    0 1px 0 var(--iron-deep),
+    0 -1px 0 rgba(0, 0, 0, 0.6),
+    1px 0 0 var(--iron-deep),
+    -1px 0 0 var(--iron-deep),
+    0 0 4px rgba(241, 194, 112, 0.22);
+  padding-right: 2px;
+}
+
+/* --- Fade keyframes for the reveal --------------------------------------
+   Split into two so the overlay can hold at opacity 1 indefinitely while
+   waiting for the Skip click. `forwards` fill-mode pins the end frame after
+   the animation completes. A plain opacity cross-fade: the per-die badges
+   fade in over the SHARP (un-blurred) 3D dice scene, hold, then fade out. */
+@keyframes battle-order-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes battle-order-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Reduced motion: same envelopes (the motion is already minimal), but
+   declared explicitly so the @keyframes can be swapped out if future
+   accessibility tuning needs a different curve. */
+@media (prefers-reduced-motion: reduce) {
+  .battle-order-reveal {
+    animation: battle-order-fade-in 300ms linear forwards;
+  }
+  .battle-order-reveal.is-dismissing {
+    animation: battle-order-fade-out 400ms linear forwards;
+  }
+}
+
+/* --- Bonus-ability "triggered" banner -----------------------------------
+   A transient card pinned to the TOP-CENTRE of the board stage when a hero's
+   passive fires (Teamwork / Power Surge / Tangled / Hunter). Same iron-card
+   body + gold ring as the battle-order badge, with a circular portrait coin
+   (turn-order-coin treatment) and the line "{name} triggered {ability}". */
+.passive-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 13px 5px 6px;
+  border-radius: 5px;
+  pointer-events: none;
+  background: linear-gradient(180deg, #2a1c11 0%, #14100a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 200, 0.14),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band, #d8a84a),
+    0 0 0 3px var(--iron-dark),
+    0 4px 12px rgba(0, 0, 0, 0.6);
+  animation: passive-banner-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.passive-banner--out {
+  animation: passive-banner-out 360ms ease-in both;
+}
+
+/* Circular portrait coin — gold ring on iron, south-facing sprite cropped to
+   the face (background-size 180% + low vertical anchor), matching the
+   turn-order coin so the banner reads as part of the same family. */
+.passive-banner-avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-size: 180% 180%;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  box-shadow:
+    inset 0 0 0 1px var(--iron-dark),
+    0 0 0 1.5px var(--gold-trim),
+    0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.passive-banner-avatar--placeholder {
+  background: linear-gradient(180deg, var(--wood-mid), var(--wood-deep));
+}
+
+.passive-banner-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #f0e6d0;
+  text-shadow: 0 1px 0 #000;
+  white-space: nowrap;
+}
+.passive-banner-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffe9b8;
+}
+.passive-banner-verb { color: #b9ab8e; }
+.passive-banner-ability {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9fc6e8;
+  text-shadow: 0 0 3px rgba(159, 198, 232, 0.22), 0 1px 0 #000;
+}
+.passive-banner-effect {
+  font-size: 11px;
+  color: #c9bda4;
+  opacity: 0.9;
+}
+.passive-banner-effect::before { content: '· '; opacity: 0.6; }
+
+@keyframes passive-banner-in {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes passive-banner-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, -8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .passive-banner { animation: battle-order-fade-in 200ms linear both; }
+  .passive-banner--out { animation: battle-order-fade-out 300ms linear both; }
+}
+
+/* --- Initiative panel ----------------------------------------------------
+   Variant of the .roll-panel used at combat-start. Each character on each
+   side gets their own portrait + d6, laid out as a vertical stack per side
+   inside the same arena. The CSS reuses .roll-panel, .roll-arena, .roll-vs,
+   .roll-side, .roll-die, and .roll-result so the entrance pulse, dice spin,
+   and verdict reveal animations all stay synchronised with the attack-roll
+   panel. Initiative-specific tweaks below override only what differs. */
+.initiative-header {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-glow, #f0c270);
+  text-shadow:
+    1px 0 0 #000, -1px 0 0 #000,
+    0 1px 0 #000, 0 -1px 0 #000,
+    0 2px 4px rgba(0, 0, 0, 0.85);
+  margin-bottom: 2px;
+}
+
+/* Each side stacks vertically — one row per character.
+   Override .roll-side's default flex-row layout. */
+.initiative-side {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  justify-content: center;
+}
+/* Initiative panels can have a lot of dice — let the arena breathe vertically. */
+.initiative-arena {
+  align-items: stretch;
+  gap: 18px;
+}
+
+.initiative-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+}
+/* Heroes read left-aligned (avatar, name, die); monsters mirror so dice land
+   nearest the central VS divider on both sides. */
+.initiative-side--monsters .initiative-entry {
+  flex-direction: row-reverse;
+}
+
+/* Override the shared `.roll-side-name` 56px cap (sized for RollPanel's
+   symmetric attacker/defender portrait columns). An initiative side is just a
+   vertical list with no symmetry constraint, so let names breathe — "Giant
+   Rat" no longer clips to "Giant R…". Still bounded so a pathologically long
+   name ellipsizes instead of blowing out the ~233px column. */
+.initiative-entry .roll-side-name {
+  max-width: 104px;
+}
+
+/* Override the per-side spin delay so every initiative die rolls in
+   simultaneously — both sides commit at the same beat. */
+.initiative-side .roll-die {
+  --roll-side-delay: 0ms;
+}
+
+/* Initiative panels carry more to read (every character's d6 + DEX +
+   total, plus the full turn-order chain), so stretch the entrance/hold/
+   fade animation to match INITIATIVE_PANEL_MS = 4500ms in
+   InitiativePanel.ts. The keyframe percentages handle the rest. */
+.roll-panel--initiative {
+  animation-duration: 4500ms;
+}
+
+/* DEX modifier inline next to each die — small, gold, italic so it reads as
+   "plus this character's natural agility". Hidden when dex is 0 (the
+   ?data-dex-zero attribute set by InitiativePanel.entryRow). */
+.initiative-dex {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  color: #f0c270;
+  text-shadow: 0 1px 0 #000, 0 0 2px rgba(0, 0, 0, 0.85);
+  min-width: 1.6em;
+}
+.initiative-dex[data-dex-zero] {
+  visibility: hidden;
+  min-width: 0;
+  width: 0;
+}
+.initiative-total {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: #f0e6d0;
+  text-shadow: 0 1px 0 #000, 0 0 2px rgba(0, 0, 0, 0.85);
+}
+
+
+.roll-result .roll-damage {
+  color: #c0b8a4;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* --- Event Log drawer: fixed to the right edge of the viewport, slides in
+   when the toggle button is clicked. Closed state pushes the panel off
+   screen via translateX(100%); open state slides back to translateX(0).
+   No drop shadow — a thin gold-tinted left border separates the drawer
+   from the board content, matching the engine-loader's bottom inset line
+   for visual consistency. --- */
+.event-log-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 92vw);
+  z-index: 20;
+  transform: translateX(100%);
+  transition: transform 240ms ease-out;
+  pointer-events: none;     /* until open — interactions on closed drawer pass through */
+  /* Iron-banded book-spine treatment: a layered left edge that reads as
+     the spine of an old leather-bound ledger pulled out of the wall. */
+  box-shadow:
+    inset 1px 0 0 0 var(--gold-band),
+    inset 2px 0 0 0 var(--iron-dark),
+    inset 4px 0 0 0 var(--wood-light),
+    inset 5px 0 0 0 var(--wood-deep),
+    -6px 0 18px rgba(0, 0, 0, 0.7);
+}
+.event-log-drawer.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* --- Event Log toggle: floating button anchored just below the engine-
+   loader strip. Default position is the top-right corner (closed-drawer
+   state); when the drawer opens, the button slides left so it sits to the
+   LEFT of the drawer's edge. .app[data-event-log="open"] flags the open
+   state — CSS transitions on `right` keep the button's slide in sync with
+   the drawer's translate animation (same 240ms ease-out). Pixel-art wood
+   frame matches the board's so the floating button reads as part of the
+   same UI. --- */
+.event-log-toggle {
+  position: fixed;
+  top: 16px;
+  right: 22px;
+  z-index: 21;             /* above the drawer so the icon flips to ✕ when open */
+  background: linear-gradient(180deg, #2a1d0e 0%, #1a120a 55%, #120a05 100%);
+  color: #f0e6d0;
+  border: none;
+  /* Same stamped-iron language as .chat-toggle / .act-btn so all top-level
+     buttons read as one set: asymmetric bevel + iron/gold/iron ring + hard
+     drop shadow. */
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    3px 3px 0 0 var(--iron-deep),
+    5px 7px 14px rgba(0, 0, 0, 0.6);
+  padding: 8px 14px;
+  font-size: 16px;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+  transition: filter 80ms steps(2, end);
+}
+
+.event-log-toggle-icon  { font-size: 18px; line-height: 1; }
+.event-log-toggle-label { font-size: 16px; font-weight: 400; letter-spacing: 0.12em; }
+.event-log-toggle:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-hi),
+    inset -1px -1px 0 0 var(--bevel-lo),
+    inset 0 0 6px rgba(240, 194, 112, 0.16),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-glow),
+    0 0 0 3px var(--iron-dark),
+    3px 3px 0 0 var(--iron-deep),
+    5px 7px 14px rgba(0, 0, 0, 0.6);
+}
+.event-log-toggle:active {
+  transform: translate(2px, 2px);
+  background: linear-gradient(180deg, #120a05 0%, #1f1409 100%);
+  box-shadow:
+    inset 1px 1px 0 0 var(--bevel-lo),
+    inset -1px -1px 0 0 var(--bevel-hi),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    1px 1px 0 0 var(--iron-deep);
+}
+.event-log-toggle:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 5px;
+}
+
+/* In-drawer close button: bare ✕ anchored to the drawer's top-right corner.
+   No iron-tile card — just the glyph — so it reads as a plain dismiss control
+   over the header. z-index sits above the event-log scroll content so it's
+   always clickable. */
+.event-log-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 22;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #f0c270;
+  border: none;
+  font-size: 18px;
+  font-family: var(--font-body);
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+  transition: filter 80ms steps(2, end), color 80ms ease-out;
+}
+.event-log-close:hover {
+  filter: brightness(1.12);
+  color: var(--gold-glow);
+}
+.event-log-close:active {
+  transform: translate(1px, 1px);
+}
+.event-log-close:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 2px;
+}
+
+/* --- Playtest survey ------------------------------------------------------
+   The floating Survey button shares the Log toggle's stamped-iron card (it
+   carries BOTH classes) and parks directly below it; the modal reuses the
+   carved-wood + hard-pixel-bevel window language of the hero select / event
+   log so it reads as part of the same chrome. --- */
+.survey-toggle {
+  top: 70px;   /* directly below the Log toggle (top 16px + ~40px card + gap) */
+}
+
+.survey-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.survey-window {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 94vw);
+  max-height: min(88vh, 760px);
+  background: linear-gradient(180deg, #232019 0%, #14110c 100%);
+  color: #efe2c2;
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #463c2d,
+    inset -2px -2px 0 0 #000,
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-band),
+    0 0 0 3px var(--iron-dark),
+    5px 7px 14px rgba(0, 0, 0, 0.6);
+}
+
+.survey-titlebar {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 12px 44px 10px 18px;
+  background: rgba(20, 15, 10, 0.92);
+  border-bottom: 2px solid #000;
+}
+.survey-title {
+  margin: 0;
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--gold-glow);
+  text-shadow: 0 2px 0 #000;
+}
+.survey-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #f0c270;
+  border: none;
+  font-size: 18px;
+  font-family: var(--font-body);
+  line-height: 1;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+}
+.survey-close:hover { filter: brightness(1.12); color: var(--gold-glow); }
+.survey-close:active { transform: translate(1px, 1px); }
+.survey-close:focus-visible { outline: 2px solid var(--gold-glow); outline-offset: 2px; }
+
+.survey-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: var(--font-body);
+}
+.survey-intro {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+  color: #d8cba8;
+}
+.survey-legend {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #a3946f;
+}
+
+.survey-q {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  background: #100c08;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 0 #000, inset -2px -2px 0 0 #2c2418;
+}
+.survey-q-title {
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f0c270;
+  text-shadow: 0 1px 0 #000;
+}
+.survey-q-text {
+  font-size: 18px;
+  line-height: 1.25;
+  color: #efe2c2;
+}
+
+.survey-score-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.survey-score-btn {
+  width: 38px;
+  height: 34px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 19px;
+  line-height: 1;
+  color: #cdbf9a;
+  background: linear-gradient(180deg, #232019 0%, #14110c 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #463c2d,
+    inset -2px -2px 0 0 #000;
+  text-shadow: 0 1px 0 #000;
+}
+.survey-score-btn:hover {
+  box-shadow:
+    inset 2px 2px 0 0 #6a5a40,
+    inset -2px -2px 0 0 #000;
+}
+/* Picked score: pressed IN — inverted bevel + gold digit (the hero-select
+   "clicked slot" look). */
+.survey-score-btn--selected,
+.survey-score-btn--selected:hover {
+  color: var(--gold-glow);
+  background: linear-gradient(180deg, #14110c 0%, #201c15 100%);
+  box-shadow:
+    inset 2px 2px 0 0 #000,
+    inset -2px -2px 0 0 #4a4036;
+}
+.survey-score-btn:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 2px;
+}
+
+.survey-divider {
+  margin-top: 2px;
+  font-size: 17px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a3946f;
+  text-align: center;
+}
+
+.survey-moment {
+  margin-top: 4px;
+  resize: vertical;
+  min-height: 58px;
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.25;
+  color: #efe2c2;
+  background: #0a0805;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 0 #000, inset -2px -2px 0 0 #2c2418;
+}
+.survey-moment:focus-visible {
+  outline: 2px solid var(--gold-glow);
+  outline-offset: 2px;
+}
+
+.survey-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 12px;
+  background: rgba(20, 15, 10, 0.92);
+  border-top: 2px solid #000;
+  font-family: var(--font-body);
+}
+.survey-run-id {
+  font-size: 14px;
+  color: #a3946f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.survey-copy-status {
+  flex: 1 1 auto;
+  font-size: 16px;
+  color: #d8cba8;
+  text-align: right;
+}
+.survey-copy,
+.survey-submit {
+  cursor: pointer;
+  font-family: var(--font-hero-name);
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  color: var(--gold-glow);
+  padding: 6px 22px 8px;
+  background: linear-gradient(180deg, #4a3a20 0%, #2a1f10 100%);
+  border: 2px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 #7a6034,
+    inset -2px -2px 0 0 #000;
+  text-shadow: 0 2px 0 #000;
+}
+.survey-copy:hover,
+.survey-copy:focus-visible,
+.survey-submit:hover:not(:disabled),
+.survey-submit:focus-visible:not(:disabled) {
+  outline: none;
+  filter: brightness(1.12);
+}
+.survey-copy:active,
+.survey-submit:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow:
+    inset 2px 2px 0 0 #000,
+    inset -2px -2px 0 0 #7a6034;
+}
+.survey-submit:disabled {
+  cursor: default;
+  color: #8d8061;
+  filter: saturate(0.5) brightness(0.85);
+}
+/* Copy is the clipboard FALLBACK next to Submit — iron, not gold. */
+.survey-copy--secondary {
+  font-size: 19px;
+  padding: 6px 14px 7px;
+  color: #cdbf9a;
+  background: linear-gradient(180deg, #232019 0%, #14110c 100%);
+  box-shadow:
+    inset 2px 2px 0 0 #463c2d,
+    inset -2px -2px 0 0 #000;
+}
+
+/* --- Event Log panel: fills the drawer. Background + color match the
+   engine-loader top bar (rgba(20, 15, 10, 0.92) on #f0e6d0) so the drawer
+   reads as a continuation of the top bar's surface. The scroll body grows
+   to fill remaining vertical space. --- */
+.event-log {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 15, 10, 0.92);
+  color: #f0e6d0;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.event-log-header {
+  flex: 0 0 auto;
+  padding: 10px 12px 11px;
+  font-family: var(--font-body);
+  font-size: 20px;
+  letter-spacing: 0.10em;
+  color: #f0c270;
+  text-transform: uppercase;
+  /* Banner-style header: dark-iron base + a stacked gold pinstripe below
+     it so the title reads like an inscription on the spine of the ledger. */
+  background: linear-gradient(180deg, #1a120a 0%, #120a05 100%);
+  box-shadow:
+    inset 0 -1px 0 0 var(--iron-dark),
+    inset 0 -2px 0 0 var(--gold-band),
+    inset 0 -3px 0 0 var(--iron-dark),
+    inset 0 1px 0 0 rgba(240, 194, 112, 0.18);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+  border-bottom: none;
+  text-align: center;
+}
+
+.event-log-scroll {
+  flex: 1 1 0;
+  /* Without this, the flex item's default min-height: auto resolves to the
+     intrinsic content size, which prevents overflow-y: auto from ever
+     engaging once the log grows past the drawer height. */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 10px;
+  display: flex;
+  /* Newest events at the TOP. DOM order is kept chronological (so tests +
+     a11y reading order are unchanged) and we flip only the visual flow
+     via `column-reverse` — the last DOM child renders at the visual top,
+     which is the newest event. Layout.ts pairs this with
+     `scrollTop = 0` after each render so the latest entry is always in
+     view when the drawer is opened.
+     `justify-content: flex-end` is the column-reverse equivalent of "pack
+     items at the visual top" — without it, a small number of events would
+     stick to the bottom of the scroll panel (since main-axis start is the
+     visual bottom under column-reverse). */
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #5c3b1c #1a120a;
+}
+.event-log-scroll::-webkit-scrollbar { width: 8px; }
+.event-log-scroll::-webkit-scrollbar-track { background: #1a120a; }
+.event-log-scroll::-webkit-scrollbar-thumb {
+  background: #5c3b1c;
+  border-radius: 0;
+}
+
+.event-log-empty {
+  color: #5c4a30;
+  font-style: italic;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 4px;
+}
+
+.event-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 6px 8px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.02);
+  /* Hairline gold pinstripe under each row — reads as a stitched separator
+     in a leather ledger, keeping the rows clearly delineated without the
+     visual weight of a full border. */
+  box-shadow: inset 0 -1px 0 0 rgba(193, 154, 74, 0.10);
+}
+.event-line--attack {
+  background:
+    linear-gradient(180deg, rgba(198, 106, 28, 0.14) 0%, rgba(198, 106, 28, 0.04) 100%);
+  box-shadow: inset 0 -1px 0 0 rgba(193, 154, 74, 0.10);
+}
+.event-line--narrate {
+  background:
+    linear-gradient(180deg, rgba(240, 194, 112, 0.10) 0%, rgba(240, 194, 112, 0.02) 100%);
+  box-shadow: inset 0 -1px 0 0 rgba(193, 154, 74, 0.10);
+}
+
+.event-avatar {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  background-size: 96px 96px;          /* 32 × 3-ish; trims to head */
+  background-position: -32px -8px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  border: none;
+  border-radius: 0;                    /* sharp pixel corners */
+  background-color: var(--iron-dark);
+  /* Stamped iron tile: 1px dark rim + 1px gold pinstripe + 1px dark base.
+     Reads as a riveted portrait frame in miniature, matching the family
+     of frames on the rest of the page. */
+  box-shadow:
+    inset 0 0 0 1px rgba(193, 154, 74, 0.35),
+    0 0 0 1px var(--iron-dark),
+    0 0 0 2px var(--gold-trim),
+    0 0 0 3px var(--iron-dark),
+    0 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+.event-avatar-monster {
+  /* Monster sprites have different head positions; show the whole sprite
+     scaled to fit so the silhouette is recognisable. */
+  background-size: 32px 32px;
+  background-position: center top;
+}
+
+.event-avatar-placeholder {
+  background: #2a1808;
+  border: 1px solid #5c3b1c;
+}
+
+/* DM narrator avatar: no sprite — show a 📖 glyph centered on the same 32×32
+   tile so narration rows align with hero/monster rows. Border + radius
+   inherit from .event-avatar so DM and hero tiles read as one set. */
+.event-avatar-dm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-image: none;
+  background-color: #2a1d0e;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Initiative avatar: like .event-avatar-dm, but a deeper ember-tinted tile
+   so the "combat round" row reads as its own kind at a glance. The ⚔️
+   glyph needs explicit centering + sizing here because .event-avatar's
+   defaults expect a sprite background, not a text node. */
+.event-avatar-initiative {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-image: none;
+  background-color: #2a0f0a;
+  font-size: 18px;
+  line-height: 1;
+  /* Emoji-family fallback chain — ensures the crossed-swords codepoint
+     renders as a color glyph across macOS / Windows / Linux instead of
+     dropping to a tiny monochrome text symbol. */
+  font-family:
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Noto Color Emoji",
+    "Twemoji Mozilla",
+    sans-serif;
+}
+
+.event-body {
+  flex: 1 1 auto;
+  display: inline;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.event-actor {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #ffe85c;
+  margin-right: 4px;
+}
+
+.event-says {
+  color: #c0b8a4;
+  margin-right: 4px;
+  font-style: italic;
+}
+
+.event-quote {
+  color: #f0e6d0;
+}
+.event-quote::before { content: "\201C"; }
+.event-quote::after  { content: "\201D"; }
+
+/* Hero emote — ambient one-glyph line. Muted so it doesn't compete with
+   dialogue, and the glyph rendered slightly larger so the emoji reads from
+   across the panel. */
+.event-line--emote {
+  opacity: 0.75;
+}
+.event-line--emote .event-actor {
+  color: #d6c890;
+  font-weight: 600;
+}
+.event-emote-glyph {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: -2px;
+  filter: saturate(0.9);
+}
+
+/* DM narration body — unquoted, slightly softer color so it reads as prose
+   rather than dialogue. */
+.event-narrate {
+  color: #e6d8b3;
+  font-style: italic;
+}
+
+.event-verb {
+  color: #c0b8a4;
+  margin-right: 4px;
+}
+
+.event-target {
+  font-weight: 600;
+  color: #ff8a6c;
+  margin-right: 4px;
+}
+
+.event-sep {
+  color: #5c4a30;
+  margin-right: 4px;
+}
+
+.event-damage {
+  color: #ff6c5a;
+  font-weight: 700;
+}
+
+.event-miss {
+  color: #8a7c5a;
+  font-style: italic;
+}
+
+/* --- Small-screen board scale-down ---
+   The board's intrinsic aspect ratio is preserved by the canvas's
+   width/height attributes (set by Board.ts:678), so capping max-width
+   and bumping the --chrome-h reserve just yields a smaller pixel-art
+   board — never a distorted one. Two tiers:
+
+     ≤960px tall (14" laptops): modest shrink so the board reads as
+     "fitting comfortably" instead of "filling the page."
+
+     ≤800px tall (13" laptops, split-screen workflows): further shrink
+     plus narrator/loader trim — the page would otherwise be too cramped
+     for the board to read at all. */
+/* ===========================================================================
+   Small / laptop-class screens — fit the board + UI to the viewport HEIGHT.
+   A 13–14" MacBook is ~900–982px tall at default scaling (less in a windowed
+   browser); the board is height-constrained, so it was boxed small while the
+   UI text stayed at full desktop size. Two coordinated moves here:
+     1. GROW THE BOARD by trimming the fixed vertical reserve it subtracts
+        (--chrome-h + the narrator window's --dialogue-zone-h / --dock-reserve-h),
+        so `.board canvas` max-height climbs. The narrator window's
+        `overflow: visible` is the safety valve — a rare overlong combat dock
+        spills into the centering slack instead of clipping.
+     2. SHRINK ALL DOM UI TEXT (cinematic screens + persistent chrome + board
+        HUD + narration), keeping type in proportion with the larger board.
+        `em`/`--cell`-relative children follow; only px/clamp anchors are set.
+        The in-game board CANVAS (Pixi text, not CSS) is left untouched.
+   1080px catches 13–16" laptops at default scaling; the deeper ≤800px tier
+   below stacks further board scaling for small windows. */
+@media (max-height: 1080px) {
+  /* Grow the board: trim the fixed vertical reserve it subtracts. Override on
+     `html, body` (NOT :root) to match the base declaration's scope — the base
+     sets --narrator-reserve-h AND its inputs on `html, body`, and `body`
+     re-derives the reserve from its OWN inputs; a :root-only override (html)
+     leaves body recomputing the stale value, which then inherits down to the
+     board. Setting the inputs on both makes the derived reserve actually drop. */
+  html, body {
+    --chrome-h: 150px;                            /* was 192px fallback */
+    --dialogue-zone-h: clamp(64px, 11vh, 112px);  /* was clamp(80,14vh,150) */
+    --dock-reserve-h: calc(128px + 6vh);          /* was calc(144px + 8vh) */
+  }
+  .board canvas { max-width: 90vw; }
+
+  /* --- Cinematic / full-screen screens (vw-based; height never shrinks them). */
+
+  /* Boot loader ("Summoning the Tale") */
+  .game-loading-title { font-size: clamp(24px, 3.4vw, 42px); }
+  .game-loading-sub   { font-size: clamp(12px, 1.15vw, 14px); }
+
+  /* Adventure-opening splash */
+  .opening-body,
+  .opening-quote   { font-size: clamp(14px, 1.5vw, 17px); }
+  .opening-pending { font-size: clamp(12px, 1.15vw, 14px); }
+
+  /* "Choose Your Hero" character select */
+  .hero-select-title   { font-size: clamp(26px, 2.9vw, 38px); }
+  .hero-card-name      { font-size: clamp(21px, 2.2vw, 27px); }
+  .hero-select-confirm { font-size: clamp(21px, 2.2vw, 28px); }
+  .hero-stat-row       { font-size: 18px; }
+  .hero-stat-icon      { width: 18px; height: 18px; }
+  .hero-hearts .hero-stat-icon { width: 16px; height: 16px; }
+
+  /* "To Arms!" combat-begins splash */
+  .combat-begins-title { font-size: clamp(34px, 4.5vw, 52px); }
+  .combat-begins-sub   { font-size: clamp(12px, 1.4vw, 17px); }
+
+  /* Ending banner */
+  .ending-title    { font-size: clamp(34px, 5vw, 62px); }
+  .ending-subtitle { font-size: clamp(12px, 1.2vw, 15px); }
+
+  /* GAME OVER (party wipe) */
+  .game-over-title       { font-size: clamp(46px, 7.4vw, 94px); }
+  .game-over-skull       { font-size: clamp(28px, 3.6vw, 46px); }
+  .game-over-sub         { font-size: clamp(13px, 1.4vw, 17px); }
+  .game-over-fallen-name { font-size: clamp(12px, 1.2vw, 14px); }
+  .game-over-hint        { font-size: clamp(10px, 1vw, 12px); }
+
+  /* --- Persistent interface chrome. Chat base cascades to .chat + em kids. */
+  .chat-toggle,
+  .chat-toggle-label { font-size: 14px; }
+  .chat-toggle-icon  { font-size: 16px; }
+  .chat-overlay      { font-size: 13px; }
+  .event-log-toggle,
+  .event-log-toggle-label { font-size: 14px; }
+  .event-log-toggle-icon  { font-size: 16px; }
+  .event-log-close        { font-size: 14px; }
+  .event-log-header       { font-size: 17px; }
+  .event-line             { font-size: 12px; }
+  .event-avatar-dm,
+  .event-avatar-initiative { font-size: 16px; }
+  .dm-aside-rune    { font-size: 14px; }
+  .dm-aside-title   { font-size: 15px; }
+  .dm-aside-dismiss { font-size: 16px; }
+  .dm-aside-speaker { font-size: 11px; }
+  .dm-aside-text    { font-size: 12px; }
+  .dm-aside-pending { font-size: 12px; }
+
+  /* --- Narrator window — narration / hero-speech + the player dock controls. */
+  .narrator-text,
+  .hero-speech-line { font-size: clamp(13px, min(1.5vw, 1.7vh), 16px); }
+  .act-btn          { font-size: clamp(12px, 1.5vh, 14px); }
+  .action-hint      { font-size: 11px; }
+  .prompt-input     { font-size: 13px; }
+  .prompt-target-option-face { font-size: clamp(11px, 1.4vh, 13px); }
+  .loader-status    { font-size: clamp(13px, 1.6vh, 16px); }
+  .loading          { font-size: 13px; }
+  .player-echo      { font-size: 13px; }
+  .player-echo--dm .player-echo-text { font-size: 14px; }
+  .player-echo-indicator      { font-size: 12px; }
+  .player-echo-indicator-icon { font-size: 13px; }
+
+  /* --- Board HUD overlays (DOM, fixed-px — don't scale with the board). */
+  .mini-bar             { font-size: 14px; }
+  .mini-bar .mini-name  { font-size: 12px; }
+  .hover-coord          { font-size: 10px; }
+  .turn-order-name      { font-size: 10px; }
+  .turn-order-slot--active .turn-order-name { font-size: 11px; }
+  .turn-order-dead-label   { font-size: 8px; }
+  .turn-order-skull        { font-size: 19px; }
+  .battle-order-badge-rank { font-size: 12px; }
+  .initiative-header,
+  .initiative-dex,
+  .initiative-total     { font-size: 12px; }
+  .passive-banner-text   { font-size: 12px; }
+  .passive-banner-effect { font-size: 10px; }
+  .roll-vs               { font-size: 12px; }
+  .roll-die              { font-size: 19px; }
+  .roll-result           { font-size: 11px; }
+  .roll-result.hit  .roll-verdict { font-size: 19px; }
+  .roll-result.miss .roll-verdict { font-size: 15px; }
+  .roll-dice-strip--empty { font-size: 10px; }
+}
+
+@media (max-height: 800px) {
+  /* Deeper board scaling for small windows, stacked on the ≤1080px reductions
+     above (which also match here, so the font + reserve trims still apply).
+     Tightens the dialogue + dock reserve further so the board keeps the lion's
+     share, and nudges the densest readouts down one more notch. */
+  html, body {                                   /* see ≤1080 note re: html,body */
+    --board-min-scale: 0.5;
+    --dialogue-zone-h: clamp(50px, 9vh, 92px);   /* tighter than ≤1080 */
+    --dock-reserve-h: calc(116px + 5vh);
+  }
+  .board canvas { max-width: 86vw; }
+  .engine-loader { min-height: 34px; padding: 4px 14px; }
+
+  .narrator-text,
+  .hero-speech-line { font-size: clamp(12px, min(1.5vw, 1.9vh), 15px); }
+  .loader-status    { font-size: clamp(12px, 1.7vh, 15px); }
+}

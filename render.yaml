@@ -1,0 +1,102 @@
+# Render Blueprint — single always-on Node web service that serves the Pixi
+# bundle + assets AND hosts the game WebSocket on one port. See README / CLAUDE.md.
+#
+# LLM PROVIDER is chosen at runtime by the scenario's `model` name (see
+# bin/play.ts): `claude-*` → Anthropic, `gemini-*` → Google Gen AI. The default
+# start scenario (scenarios/basement-o-rats.json) currently uses
+# `gemini-3.5-flash`, so a stock deploy needs the GEMINI vars below. Set ONLY
+# the credential group matching your scenario's model — the others can be left
+# blank.
+#
+# One-time setup after creating the Blueprint in the Render dashboard (the
+# `sync: false` vars below are prompted for at deploy time):
+#   - ACCESS_PASSWORD : shared password gating the public URL (sign-in page +
+#                       WS upgrade). Omit to leave the site open (not advised).
+#                       TEMP (2026-06-03): currently a NO-OP — the gate is
+#                       disabled in code (PASSWORD_GATE_ENABLED in
+#                       src/runtime/ws/server.ts); flip it back to re-enable.
+#
+#   For a CLAUDE (`claude-*`) scenario:
+#   - ANTHROPIC_API_KEY : your Anthropic key.
+#
+#   For a GEMINI (`gemini-*`) scenario, pick ONE backend:
+#   (a) Gemini Developer API — simplest:
+#       - GEMINI_API_KEY : an AI Studio / Generative Language API key whose
+#                          project is on a working (paid) tier.
+#   (b) Vertex AI — bills the GCP project directly (use this to spend Cloud
+#       credits). On Render there is NO `gcloud auth application-default login`,
+#       so authenticate with a SERVICE ACCOUNT instead of ADC:
+#         1. In the GCP project, create a service account with role
+#            "Vertex AI User" and download its JSON key.
+#         2. In Render → the service → "Secret Files", upload that JSON, e.g. at
+#            /etc/secrets/gcp-sa.json.
+#         3. Set the env vars:
+#              GOOGLE_GENAI_USE_VERTEXAI   = true
+#              GOOGLE_CLOUD_PROJECT        = <your-project-id>
+#              GOOGLE_CLOUD_LOCATION       = global   (preset below; override if needed)
+#              GOOGLE_APPLICATION_CREDENTIALS = /etc/secrets/gcp-sa.json
+#
+# Notes:
+#   - `runtime: node` keeps this a native build (no Docker). devDeps are needed
+#     at BOTH build (vite) and runtime (tsx), hence `--include=dev`.
+#   - Render injects $PORT; bin/play.ts binds to it. location.host in the browser
+#     resolves the WS URL automatically, so no per-host URL config is needed.
+#   - The starter plan is always-on (no idle spin-down / cold starts).
+#   - One process hosts multiple games in parallel — one per browser sid (a new
+#     page load = a new game; same sid = reconnect). The LLM client is built
+#     lazily per session, so a missing/invalid provider key no longer stops the
+#     server from booting (the `/` health check stays green); it surfaces only
+#     when a game tries to start. Each live game still costs its own LLM calls.
+#   - At most MAX_SESSIONS games run CONCURRENTLY (env var below; <=0 =
+#     unlimited). Further visitors wait in a FIFO line — their tab shows
+#     "you are #N in line" — and are admitted automatically as running games
+#     end. Keep this modest on the starter instance (0.5 CPU / 512 MB).
+#   - `runs/` logs are written to the instance's ephemeral disk and lost on redeploy.
+services:
+  - type: web
+    name: agents-rpg
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npm run build:web
+    startCommand: npm run start:web
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Cap on concurrent game sessions (each runs its own DM + hero LLM
+      # agents). Visitors beyond the cap queue FIFO for a free slot.
+      - key: MAX_SESSIONS
+        value: "3"
+      - key: ACCESS_PASSWORD
+        sync: false
+      # --- Anthropic (claude-* scenarios) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # --- Gemini Developer API (gemini-* scenarios, backend (a)) ---
+      - key: GEMINI_API_KEY
+        sync: false
+      # --- Gemini via Vertex AI (gemini-* scenarios, backend (b)) ---
+      # Set GOOGLE_GENAI_USE_VERTEXAI=true to route Gemini through Vertex.
+      - key: GOOGLE_GENAI_USE_VERTEXAI
+        sync: false
+      - key: GOOGLE_CLOUD_PROJECT
+        sync: false
+      - key: GOOGLE_CLOUD_LOCATION
+        value: "global"
+      # Path to the service-account JSON uploaded as a Render Secret File.
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false
+      # --- Research-artifact persistence (surveys + run event logs) ---
+      # Submitted playtest surveys (surveys/<runId>/<stamp>.json) AND each
+      # finished run's event log + manifest (runs/<runId>/events.jsonl +
+      # manifest.json, uploaded when the session settles) go to this GCS
+      # bucket using the SAME service-account credentials as Vertex AI above —
+      # the SA additionally needs `roles/storage.objectCreator` on the bucket:
+      #   gcloud storage buckets add-iam-policy-binding \
+      #     gs://agents-rpg-surveys-high-torch-494308-r0 \
+      #     --member="serviceAccount:vertex-ai-user@high-torch-494308-r0.iam.gserviceaccount.com" \
+      #     --role="roles/storage.objectCreator"
+      # Set to "none" to disable uploads (artifacts then land only in runs/,
+      # which is EPHEMERAL on Render — lost on redeploy).
+      - key: GCS_BUCKET
+        value: "agents-rpg-surveys-high-torch-494308-r0"

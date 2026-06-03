@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 6" shape-rendering="crispEdges">
+  <!-- Pixel-art thought-trail blob (the small circles descending from the
+       thought cloud toward the thinker's head). Display at 2x (12px) for the
+       big blob and 1x (6px) for the small one. -->
+  <g fill="#2a2421">
+    <rect x="2" y="0" width="2" height="1"/>
+    <rect x="1" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/>
+    <rect x="0" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/>
+    <rect x="0" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/>
+    <rect x="1" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/>
+    <rect x="2" y="5" width="2" height="1"/>
+  </g>
+  <g fill="#f4ecd6">
+    <rect x="2" y="1" width="2" height="1"/>
+    <rect x="1" y="2" width="4" height="1"/>
+    <rect x="1" y="3" width="4" height="1"/>
+    <rect x="2" y="4" width="2" height="1"/>
+  </g>
+  <g fill="#fdf6e3">
+    <rect x="2" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/>
+  </g>
+  <g fill="#d9ccab">
+    <rect x="2" y="4" width="2" height="1"/><rect x="4" y="3" width="1" height="1"/>
+  </g>
+</svg>

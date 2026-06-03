@@ -1,0 +1,47 @@
+{
+  "title": "Sewers",
+  "batch": 1,
+  "style": "16-bit SNES (Chrono Trigger), dark, sewer water",
+  "items": [
+    {
+      "id": "sewer-tileset", "name": "Sewer tileset — stone walkway ↔ sewer water", "type": "tileset", "files": ["sewer-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "dark wet grimy stone sewer walkway, mossy grey cobblestones, dim torchlit, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "murky dark green-brown stagnant sewer water, slimy surface with faint oily ripples, classic 16-bit SNES pixel art top-down, dark, Chrono Trigger style", "transition": "slimy algae-covered wet stone curb edge, dark waterline", "transition_size": 0.25, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "sewer-grate", "name": "Drain grate", "type": "obstacle", "files": ["sewer-grate.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "rusty iron sewer drain grate set into dark stone floor, grimy, 16-bit SNES pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "rubble-pile", "name": "Rubble pile", "type": "obstacle", "files": ["rubble-pile.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "pile of broken grey stone rubble and collapsed bricks, damp mossy, dark, 16-bit SNES pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "broken-barrel", "name": "Broken soggy barrel", "type": "obstacle", "files": ["broken-barrel.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "broken soggy wooden barrel cracked open with green slime oozing out, dark, 16-bit SNES pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "stone-pillar", "name": "Crumbling pillar", "type": "obstacle", "files": ["stone-pillar.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "crumbling cracked dark stone sewer pillar column with sparse dark moss, dark, 16-bit SNES pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "bone-pile", "name": "Bone & refuse pile", "type": "obstacle", "files": ["bone-pile.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "pile of dirty gnawed bones and refuse rubbish, dark, 16-bit SNES pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "spike-trap", "name": "Floor spike trap", "type": "trap", "files": ["spike-trap.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "iron floor spike trap, sharp rusty metal spikes protruding up through a stone grate, dark, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "pressure-plate", "name": "Pressure plate trap", "type": "trap", "files": ["pressure-plate.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "suspicious stone pressure plate floor trap with faint trigger seams and a worn rune, dark, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "bear-trap", "name": "Bear trap (iron jaw)", "type": "trap", "files": ["bear-trap.png"], "status": "ready", "note": "first pass came out as a bear's head — regen prompt fixed to leg-hold jaw trap",
+      "regen": { "kind": "object", "description": "rusty iron leg-hold jaw trap lying open on a stone floor, semicircular row of metal teeth, spring and chain, NO animal, dark, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "gas-vent", "name": "Poison gas vent trap", "type": "trap", "files": ["gas-vent.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "stone floor grate venting hissing green poison gas cloud, dark, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    }
+  ]
+}

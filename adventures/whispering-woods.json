@@ -1,0 +1,211 @@
+{
+  "id": "whispering-woods",
+  "title": "The Whispering Woods",
+  "estimatedDurationMin": 60,
+  "scenes": [
+    {
+      "id": "forest-edge",
+      "intro": "Dusk falls on the treeline outside Hallow's Reach. A small girl named Mira sits in the dirt at the path's mouth, sobbing — her sister Lyra wandered into the woods this morning and never came back. You can see her there on the west edge of the path, small and hunched, clutching her knees. The forest behind her is wrong: no birdsong, no insect-hum, only a sweet humming that catches in your ears like a half-remembered lullaby. You step toward the trees and the air goes still.",
+      "map": {
+        "width": 10,
+        "height": 7,
+        "background": "forest-edge",
+        "walls": false,
+        "obstacles": [
+          { "type": "mossy-log",    "x": 4, "y": 0 },
+          { "type": "mossy-log",    "x": 5, "y": 0 },
+          { "type": "briar-patch",  "x": 7, "y": 1 },
+          { "type": "briar-patch",  "x": 2, "y": 5 },
+          { "type": "mossy-log",    "x": 4, "y": 6 },
+          { "type": "mossy-log",    "x": 5, "y": 6 }
+        ],
+        "decorations": [
+          { "type": "glowing-mushroom", "x": 3, "y": 2 },
+          { "type": "glowing-mushroom", "x": 6, "y": 4 },
+          { "type": "glowing-mushroom", "x": 8, "y": 2 }
+        ],
+        "exits": [
+          { "to": "whispering-path", "at": { "x": 9, "y": 3 }, "trigger": "step-on" }
+        ],
+        "npcs": [
+          { "type": "mira", "startPos": { "x": 0, "y": 5 }, "allegiance": "neutral" }
+        ]
+      },
+      "monsters": [],
+      "tactics": "No combat. Mira is a kind=npc grid character spawned at (0,5) on the west edge of the map — the DM can move her and speak through her via npc_action. She will say her sister Lyra ran in chasing a 'dancing blue light.' Heroes who succeed on a Persuasion test (Charisma-flavoured intelligence-persuasion at difficulty 4) calm her and learn she saw small green creatures in the brush. Perception spots that no birds sing — the forest has gone silent. Knowledge (Intelligence-knowledge difficulty 5) recalls an old village tale: a dryad's tree should never be cut. Tracking the dirt path picks up Lyra's small footprints heading east, alongside slender bare prints that are not quite human. Heroes leave east toward whispering-path. When the heroes depart, use npc_action to walk Mira back toward the village edge (west). Mossy logs and briar patches block parts of the grid — route around them or smash them open with attack_object (the logs especially are rotten, difficulty 4).",
+      "abilityTests": [
+        { "skill": "intelligence-persuasion", "difficulty": 4, "describe": "Calm Mira enough that she will tell you what she saw before her sister vanished." },
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Listen to the forest. Notice that no bird, no cricket, no breath of wildlife answers — only the humming." },
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Recall the old village story: a woodcutter who took a fae-blessed tree was never seen again. A dryad's wrath, the elders say." },
+        { "skill": "intelligence-tracking",   "difficulty": 4, "describe": "Read the path. Lyra's small footprints lead east — and beside them, the bare prints of something slender and not quite human." }
+      ],
+      "conclusion": "Mira nods and runs back to the village. The forest's humming is louder now. Lyra's footprints lead east into the trees, weaving past brambles and old mossy logs. You step beneath the canopy and the world dims.",
+      "transitions": [{ "to": "whispering-path", "trigger": "manual" }]
+    },
+    {
+      "id": "whispering-path",
+      "intro": "A mist hangs between the trees that should not be here at dusk. The path bends — and bends again — and you realise you have been walking past the same crooked birch for the fourth time. A small creek cuts across the trail, bridged by a fallen log slick with moss. From somewhere ahead the humming becomes a low fae lullaby, and the edges of your vision blur. You shake your head; the forest wants you to forget why you came.",
+      "map": {
+        "width": 12,
+        "height": 8,
+        "background": "whispering-path",
+        "walls": false,
+        "obstacles": [
+          { "type": "mossy-log",   "x": 5, "y": 3 },
+          { "type": "mossy-log",   "x": 5, "y": 4 },
+          { "type": "briar-patch", "x": 3, "y": 1 },
+          { "type": "briar-patch", "x": 3, "y": 6 },
+          { "type": "briar-patch", "x": 7, "y": 0 },
+          { "type": "briar-patch", "x": 7, "y": 7 },
+          { "type": "briar-patch", "x": 9, "y": 2 },
+          { "type": "briar-patch", "x": 9, "y": 5 }
+        ],
+        "decorations": [
+          { "type": "glowing-mushroom", "x": 2, "y": 4 },
+          { "type": "glowing-mushroom", "x": 6, "y": 2 },
+          { "type": "glowing-mushroom", "x": 6, "y": 5 },
+          { "type": "glowing-mushroom", "x": 10, "y": 4 }
+        ],
+        "exits": [
+          { "to": "briar-hollow", "at": { "x": 11, "y": 4 }, "trigger": "step-on" }
+        ]
+      },
+      "monsters": [],
+      "tactics": "No combat — this is a 'puzzle' scene. The path will loop forever unless the heroes break the glamour: an Intelligence-knowledge test difficulty 5 lets them see through the fae illusion, OR an Intelligence-perception test difficulty 4 picks out the dryad's lullaby and reveals it is pulling them in circles. The fallen mossy log at (5,3-4) bridges the creek; heroes can either Dexterity-acrobatics difficulty 4 to walk it, Strength-athletics difficulty 4 to vault it, or attack_object the rotten log apart at difficulty 4 (a brittle-bridge solution any hero can attempt). Briar patches close off most diagonal shortcuts; route through the middle or smash one with attack_object difficulty 4. Tracking the deepening footprints (Intelligence-tracking difficulty 4) confirms the dryad-prints are leading the heroes deliberately. Exit east at (11,4).",
+      "abilityTests": [
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Recognise the fae glamour for what it is — a beguilement that turns paths into loops. Once named, the spell loosens." },
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Listen past the humming. The lullaby is pulling you in circles; if you can name its rhythm you can step out of it." },
+        { "skill": "dexterity-acrobatics",    "difficulty": 4, "describe": "Cross the slick mossy log over the creek without slipping." },
+        { "skill": "strength-athletics",      "difficulty": 4, "describe": "Vault the fallen log — or lever it sideways into a more useful crossing." },
+        { "skill": "intelligence-tracking",   "difficulty": 4, "describe": "Follow the deepening footprints. The slender prints walk beside Lyra's, not behind her — whoever this is, they are LEADING the child." }
+      ],
+      "conclusion": "The humming thins as the path finally straightens. Ahead, the trees crowd in close and the ground darkens to a thorny green. You hear, far ahead, a small frightened laugh that is and is not Lyra's voice.",
+      "transitions": [{ "to": "briar-hollow", "trigger": "manual" }]
+    },
+    {
+      "id": "briar-hollow",
+      "intro": "The forest closes around you in a hollow choked with brambles. Thorns the colour of dried blood rake at your sleeves. You hear high, clicking voices from low to the ground — and then they SPRING from the bracken. Three small spiky creatures with glowing yellow eyes leap onto the path, baring needle teeth.",
+      "map": {
+        "width": 10,
+        "height": 8,
+        "background": "briar-hollow",
+        "walls": false,
+        "obstacles": [
+          { "type": "briar-patch", "x": 4, "y": 0 },
+          { "type": "briar-patch", "x": 4, "y": 1 },
+          { "type": "briar-patch", "x": 4, "y": 6 },
+          { "type": "briar-patch", "x": 4, "y": 7 },
+          { "type": "briar-patch", "x": 5, "y": 3 },
+          { "type": "briar-patch", "x": 5, "y": 4 },
+          { "type": "mossy-log",   "x": 2, "y": 4 },
+          { "type": "mossy-log",   "x": 7, "y": 3 }
+        ],
+        "decorations": [
+          { "type": "glowing-mushroom", "x": 1, "y": 2 },
+          { "type": "glowing-mushroom", "x": 8, "y": 5 },
+          { "type": "glowing-mushroom", "x": 6, "y": 7 }
+        ],
+        "exits": [
+          { "to": "wounded-oak", "at": { "x": 9, "y": 4 }, "trigger": "step-on" }
+        ]
+      },
+      "monsters": [
+        { "type": "thorn-wisp", "startPos": { "x": 6, "y": 2 } },
+        { "type": "thorn-wisp", "startPos": { "x": 7, "y": 5 } },
+        { "type": "thorn-wisp", "startPos": { "x": 8, "y": 3 } }
+      ],
+      "tactics": "Three thorn-wisps engage the heroes with melee bites. They are coward-flavoured (move 2 extra squares after being attacked) and will dart from briar to briar — a single ranged or magic hit puts them down (healthTotal 1). The briar patches at (4,0-1), (4,6-7), (5,3-4) split the hollow into corridors that constrain LoS; route around or smash a path with attack_object difficulty 4. Strength-athletics difficulty 4 shoves through a briar at half speed (Tactic flavour, not strictly required). Perception difficulty 4 spots a fresh dryad-print at the eastern edge — she came through here moments ago. Tracking difficulty 4 reads the prints and confirms she ducked east, deeper, dragging something child-sized. Exit east at (9,4) after the wisps are KO'd.",
+      "abilityTests": [
+        { "skill": "strength-athletics",      "difficulty": 4, "describe": "Shove through a briar patch by main force, taking only a scratch." },
+        { "skill": "dexterity-acrobatics",    "difficulty": 4, "describe": "Squeeze sideways through the brambles without disturbing the thorns." },
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Spot a fresh barefoot dryad-print pressed into the dirt at the east edge. She came through here only moments ago." },
+        { "skill": "intelligence-tracking",   "difficulty": 4, "describe": "Read the prints: she was dragging something child-sized, gently, headed east." }
+      ],
+      "conclusion": "The last thorn-wisp shrieks and dissolves into a puff of pollen and bramble. The hollow is yours. From further east you hear a soft, sad humming — and a child's voice, faint, calling for her sister.",
+      "transitions": [{ "to": "wounded-oak", "trigger": "all-monsters-ko" }]
+    },
+    {
+      "id": "wounded-oak",
+      "intro": "The trees pull back and you stand in a glade. At its centre, a vast oak rises — and a deep axe-wound gapes black in its trunk, oozing dark amber sap that smells of iron and grief. A small blue ribbon is caught on a low branch — Mira described it: Lyra's. The humming is louder here, and it is, you realise, sobbing. There is no enemy in sight. Whoever is keeping Lyra is not far.",
+      "map": {
+        "width": 11,
+        "height": 8,
+        "background": "wounded-oak",
+        "walls": false,
+        "obstacles": [
+          { "type": "mossy-log",   "x": 5, "y": 3 },
+          { "type": "mossy-log",   "x": 5, "y": 4 },
+          { "type": "briar-patch", "x": 2, "y": 1 },
+          { "type": "briar-patch", "x": 8, "y": 1 },
+          { "type": "briar-patch", "x": 2, "y": 6 },
+          { "type": "briar-patch", "x": 8, "y": 6 }
+        ],
+        "decorations": [
+          { "type": "glowing-mushroom", "x": 4, "y": 2 },
+          { "type": "glowing-mushroom", "x": 6, "y": 5 },
+          { "type": "glowing-mushroom", "x": 5, "y": 1 },
+          { "type": "glowing-mushroom", "x": 5, "y": 6 }
+        ],
+        "exits": [
+          { "to": "dryad-grove", "at": { "x": 10, "y": 4 }, "trigger": "step-on" }
+        ]
+      },
+      "monsters": [],
+      "tactics": "No combat. This is the keystone scene — outcome here decides whether scene 5 is peaceful or violent. Multiple Intelligence-knowledge tests at difficulty 5 examine the wound: it is fae-rot, the tree is dying, and the small bare prints around its roots are a dryad's. Perception difficulty 5 looks UP and notices Nimue hiding in the canopy — green eyes between the leaves, watching. Persuasion difficulty 5 calls out to her gently; she will not answer but the lullaby softens. THE KEY TEST: a magic-knowledge ability_test (characteristic=magic, skill=intelligence-knowledge, difficulty=5) to perform a forest-mending ritual on the oak — only Healer or Warlock can attempt this (or any hero with magic dice). On a success, the wound knits, the humming gentles, and a faint pale-green glow follows the heroes east — this UNLOCKS the peaceful resolution in scene 5. On a failure (or no attempt), the wound deepens and the lullaby rises to a wail; scene 5 will be combat. The DM should track this with private narration; do NOT spawn loot here. Heroes leave east through the canopy gap at (10,4).",
+      "abilityTests": [
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Examine the wound. This is no ordinary axe-cut — fae-rot has crept in and the tree is dying. The prints around its roots are a dryad's, small and bare." },
+        { "skill": "intelligence-perception", "difficulty": 5, "describe": "Look up. Among the high leaves, two pale-green eyes are watching you. She is here, and she is afraid." },
+        { "skill": "intelligence-persuasion", "difficulty": 5, "describe": "Call out gently. Tell her you are not here to cut anything. The lullaby softens but does not stop." },
+        { "skill": "magic-knowledge",         "difficulty": 5, "describe": "RITUAL: weave a forest-mending into the tree's wound. Healer or Warlock only. On success, the rot recedes and a pale-green glow follows you east — the dryad will hear your words in the grove." },
+        { "skill": "intelligence-tracking",   "difficulty": 4, "describe": "Read the bare prints around the roots — Nimue paced here for hours, dragging the child gently, weeping the whole time. Whatever is happening, she does not want to hurt anyone." }
+      ],
+      "conclusion": "Whether the tree's wound knits or weeps wider, you have learned enough. This is no monster's lair — it is a grief. Through the canopy gap to the east, soft green lights drift and dance: the grove where she has taken Lyra waits for you.",
+      "transitions": [{ "to": "dryad-grove", "trigger": "manual" }]
+    },
+    {
+      "id": "dryad-grove",
+      "intro": "You step into a ring of birches lit by pale green fae-lights. At its centre, a young dryad sits cross-legged on the moss — Nimue, leaves for hair and bark for skin, eyes wet with old tears. Lyra lies asleep just behind her, a crown of clover on her brow — you can see the child on the grid, still as a stone, breathing softly. Two thorn-wisps bristle at Nimue's sides, baring teeth at you. Nimue raises her chin and her voice comes out cracked but proud: 'You can have her back when you bring my tree back. Until then — she is mine. She is safe. She is mine.'",
+      "map": {
+        "width": 12,
+        "height": 9,
+        "background": "dryad-grove",
+        "walls": false,
+        "obstacles": [
+          { "type": "mossy-log",   "x": 3, "y": 2 },
+          { "type": "mossy-log",   "x": 3, "y": 6 },
+          { "type": "mossy-log",   "x": 8, "y": 4 },
+          { "type": "briar-patch", "x": 5, "y": 0 },
+          { "type": "briar-patch", "x": 6, "y": 0 },
+          { "type": "briar-patch", "x": 5, "y": 8 },
+          { "type": "briar-patch", "x": 6, "y": 8 }
+        ],
+        "decorations": [
+          { "type": "glowing-mushroom", "x": 4, "y": 3 },
+          { "type": "glowing-mushroom", "x": 4, "y": 5 },
+          { "type": "glowing-mushroom", "x": 7, "y": 3 },
+          { "type": "glowing-mushroom", "x": 7, "y": 5 },
+          { "type": "glowing-mushroom", "x": 6, "y": 4 }
+        ],
+        "exits": [],
+        "npcs": [
+          { "type": "lyra", "startPos": { "x": 6, "y": 5 }, "allegiance": "neutral" }
+        ]
+      },
+      "monsters": [
+        { "type": "dryad-nimue", "startPos": { "x": 6, "y": 4 } },
+        { "type": "thorn-wisp",  "startPos": { "x": 5, "y": 4 } },
+        { "type": "thorn-wisp",  "startPos": { "x": 7, "y": 4 } }
+      ],
+      "tactics": "BRANCHES on the outcome of scene 4 (the magic-mending ritual). The engine spawns Nimue + 2 thorn-wisps; the DM decides which branch fires. Lyra is a kind=npc grid character spawned at (6,5) — directly at Nimue's feet. She is asleep and does not act; once Nimue releases her (peaceful branch) or is KO'd (combat branch), the DM can use npc_action(lyra, move) to walk her toward the nearest hero. PEACEFUL BRANCH (if the oak was mended): the heroes can resolve this scene with persuasion alone. An Intelligence-persuasion test difficulty 6 (the hardest in the adventure) talks Nimue down — show her the mended bark on your hands, name her grief, promise the village will plant new oaks. On success, she releases Lyra, weeps her thanks, and the thorn-wisps dissolve into pollen. The DM calls end_adventure outcome=success without combat. COMBAT BRANCH (if the oak was not mended): Nimue attacks with Strangling Vine (range-3 magic, 2 dice). Her two thorn-wisps swarm. Nimue has 3 health and armor 2 — bring her down through the wisps first. After Nimue is KO'd she dissolves into a flurry of green leaves; Lyra wakes safe and crying. The DM still calls end_adventure outcome=success. EITHER WAY: the thorn-wisps will not attack the SLEEPING Lyra; she is the dryad's hostage but not her target. Strength-athletics difficulty 4 or Dexterity-acrobatics difficulty 4 lets a hero scoop Lyra and carry her clear of the fighting on a single turn. Briar patches at the grove edges block some flanks; the mossy logs at (3,2), (3,6), (8,4) provide partial cover.",
+      "abilityTests": [
+        { "skill": "intelligence-persuasion", "difficulty": 6, "describe": "Talk Nimue down. This is the hardest test in the adventure — name her grief, name the village's debt, promise restitution she can believe. (Difficulty 5 if the oak was mended in scene 4.)" },
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Name her, gently: 'Nimue.' Speak the old word for grieving-dryads. Recognition softens her eyes." },
+        { "skill": "strength-athletics",      "difficulty": 4, "describe": "Sprint forward, scoop Lyra into your arms, and carry her clear of the fighting in one fluid motion." },
+        { "skill": "dexterity-acrobatics",    "difficulty": 4, "describe": "Roll past the snarling thorn-wisps, snatch Lyra, and tumble back out of reach." },
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Watch Nimue's hands. Every time she clenches a fist, the brambles around her quiver — a clear tell of her next vine attack." }
+      ],
+      "conclusion": "Whether by sword or by word, the grove falls quiet. Lyra wakes in her rescuer's arms and clings tight. Nimue is gone — either as a falling shower of green leaves, or walking slowly toward her mended oak, never once looking back. You carry the girl home through a forest that, for the first time in days, is humming with birdsong again.",
+      "transitions": [{ "to": "END", "trigger": "all-monsters-ko" }]
+    }
+  ]
+}

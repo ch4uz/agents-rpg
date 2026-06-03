@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Pixel Explosion — Standalone Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" />
+  <style>
+    :root {
+      --wood-dark:  #2a2118;
+      --wood-mid:   #5a4a35;
+      --wood-light: #8a7148;
+      --ink:        #f5e9c8;
+      --accent:     #f0b04c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; min-height: 100%;
+      background: var(--wood-dark); color: var(--ink);
+      font-family: 'Jersey 10', system-ui, -apple-system, sans-serif;
+    }
+    main {
+      max-width: 1000px; margin: 0 auto; padding: 32px 24px;
+      display: flex; flex-direction: column; gap: 20px; align-items: center;
+    }
+    header { width: 100%; }
+    header h1 { margin: 0 0 6px; font-size: 36px; letter-spacing: 1px; color: var(--accent); }
+    header p { margin: 0; opacity: 0.7; font-size: 18px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+    button {
+      background: var(--wood-mid); color: var(--ink);
+      border: 2px solid var(--wood-light); border-radius: 6px;
+      padding: 10px 16px; font-family: inherit; font-size: 18px; cursor: pointer;
+    }
+    button:hover { background: var(--wood-light); }
+    #board-host {
+      display: flex; justify-content: center; align-items: center;
+      padding: 24px; background: #0c0a08;
+      border: 3px solid var(--wood-mid); border-radius: 8px;
+    }
+    #board-host canvas { display: block; }
+    #status { width: 100%; white-space: pre-wrap; opacity: 0.85; font-size: 18px; min-height: 24px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Pixel Explosion</h1>
+      <p>SNES 16-bit fire VFX (triggerExplosion) over a dark dungeon floor.</p>
+    </header>
+    <div class="controls" id="controls">
+      <button data-action="1">Radius 1</button>
+      <button data-action="2">Radius 2</button>
+      <button data-action="3">Radius 3</button>
+      <button data-action="loop">Loop ▶</button>
+      <button data-action="slow">Slow-mo</button>
+    </div>
+    <div id="board-host"></div>
+    <pre id="status"></pre>
+  </main>
+  <script type="module" src="./explosion-test.ts"></script>
+</body>
+</html>

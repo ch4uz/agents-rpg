@@ -1,0 +1,29 @@
+{
+  "id": "stub-layer-b",
+  "title": "Stub: Layer B end-to-end fixture",
+  "estimatedDurationMin": 10,
+  "scenes": [
+    {
+      "id": "stub-cell-b",
+      "intro": "You stand in a dim stone room. Three rats scurry near the back wall.",
+      "map": {
+        "width": 8,
+        "height": 8,
+        "background": "stub-cell-b",
+        "obstacles": [],
+        "exits": []
+      },
+      "monsters": [
+        { "type": "giant-rat", "startPos": { "x": 5, "y": 2 } },
+        { "type": "giant-rat", "startPos": { "x": 6, "y": 2 } },
+        { "type": "giant-rat", "startPos": { "x": 5, "y": 5 } }
+      ],
+      "tactics": "Rats hold their position until attacked, then engage the closest hero.",
+      "abilityTests": [
+        { "skill": "perception", "difficulty": 4, "describe": "spot which rat looks weakest" }
+      ],
+      "conclusion": "With the last rat down, the room falls quiet.",
+      "transitions": [{ "to": "END", "trigger": "all-monsters-ko" }]
+    }
+  ]
+}

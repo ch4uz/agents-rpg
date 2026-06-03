@@ -1,0 +1,11 @@
+.superpowers/
+.context/
+Mini-Medieval-Documented-8x8/
+.DS_Store
+node_modules/
+dist/
+runs/
+dashboard/
+*.tsbuildinfo
+coverage/
+report/

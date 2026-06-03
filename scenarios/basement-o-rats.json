@@ -1,0 +1,15 @@
+{
+  "id": "basement-o-rats",
+  "adventure": "adventures/basement-o-rats.json",
+  "seed": "0xRAT-2026-05-09-encounter-1",
+  "model": "gemini-3.5-flash",
+  "stepBudget": { "player": 6, "dm": 12 },
+  "snapshotEveryTurns": 3,
+  "agents": {
+    "p1": { "characterId": "p1_warrior", "archetype": "warrior", "name": "Gareth", "names": { "pt": "Heitor" }, "persona": "personas/gareth-warrior.md" },
+    "p2": { "characterId": "p2_warlock",  "archetype": "warlock", "name": "Kael",  "names": { "pt": "Caio" },  "persona": "personas/kael-warlock.md" },
+    "p3": { "characterId": "p3_healer", "archetype": "healer",  "name": "Elara", "names": { "pt": "Iara" },  "persona": "personas/elara-healer.md" },
+    "dm": { "persona": "personas/dm-default.md" }
+  },
+  "human": { "characterId": "human_hunter", "archetype": "hunter", "name": "Bran", "names": { "pt": "Breno" }, "persona": "personas/bran-hunter.md" }
+}

@@ -1,0 +1,94 @@
+[
+  {
+    "id": "warrior",
+    "name": "Warrior",
+    "archetype": "warrior",
+    "blurb": "A brave front-line fighter who wades into the fray and shields his friends. Tough armor, hits hard up close, and gains an extra die when allies gang up on the same foe.",
+    "pools": { "melee": 2, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 0,
+    "healthTotal": 3,
+    "normalAttack": { "kind": "melee", "name": "Slashing Strike", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "whirlwind-attack",
+      "name": "Whirlwind Attack",
+      "description": "Split your melee dice to make melee attacks at multiple adjacent targets."
+    },
+    "bonusAbility": {
+      "effectId": "teamwork",
+      "name": "Teamwork",
+      "description": "When a target is engaged, your attacks against that target gain 1 extra die."
+    },
+    "defaultInventory": [{ "itemId": "potion", "count": 2 }, { "itemId": "food", "count": 1 }],
+    "defaultSkills": ["tracking"],
+    "sprite": "warrior"
+  },
+  {
+    "id": "hunter",
+    "name": "Hunter",
+    "archetype": "hunter",
+    "blurb": "A sharp-eyed archer who strikes from afar. Quick on his feet and deadly at range, he can split his arrows across several enemies and slip away the moment he's hit.",
+    "pools": { "melee": 0, "ranged": 2, "magic": 0, "armor": 2 },
+    "dex": 2,
+    "healthTotal": 2,
+    "normalAttack": { "kind": "ranged", "name": "Arrow Shot", "range": 6, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "split-shot",
+      "name": "Arrow-Split Shot",
+      "description": "Split your ranged dice to attack multiple targets up to 6 squares away."
+    },
+    "bonusAbility": {
+      "effectId": "evasive-maneuver",
+      "name": "Hunter",
+      "description": "When you're damaged by an attack, you can immediately move 1 square."
+    },
+    "defaultInventory": [{ "itemId": "potion", "count": 2 }, { "itemId": "rope", "count": 1 }],
+    "defaultSkills": ["tracking"],
+    "sprite": "hunter"
+  },
+  {
+    "id": "healer",
+    "name": "Healer",
+    "archetype": "healer",
+    "blurb": "A gentle mender who keeps the party standing. She casts searing light from range, brews potions, and can pull a wounded ally back from the brink with a healing touch.",
+    "pools": { "melee": 0, "ranged": 0, "magic": 2, "armor": 1 },
+    "dex": 1,
+    "healthTotal": 2,
+    "normalAttack": { "kind": "magic", "name": "Searing Light", "range": 4, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "healing-touch",
+      "name": "Healing Touch",
+      "description": "Remove 1 damage from yourself or an adjacent ally."
+    },
+    "bonusAbility": {
+      "effectId": "tangled",
+      "name": "Tangled",
+      "description": "When defending melee attacks, you gain 1 extra die to your armor pool."
+    },
+    "defaultInventory": [{ "itemId": "potion", "count": 2 }, { "itemId": "herbs", "count": 1 }],
+    "defaultSkills": ["knowledge"],
+    "sprite": "healer"
+  },
+  {
+    "id": "warlock-fire",
+    "name": "Warlock (Fire)",
+    "archetype": "warlock",
+    "blurb": "A reckless fire-mage who hurls flaming bolts across the room. He burns hotter the more hurt he takes, and can wash every nearby enemy in a burst of flame.",
+    "pools": { "melee": 0, "ranged": 0, "magic": 2, "armor": 1 },
+    "dex": 1,
+    "healthTotal": 2,
+    "normalAttack": { "kind": "magic", "name": "Flaming Bolt", "range": 4, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "flame-burst",
+      "name": "Flame Burst",
+      "description": "Make 1-die magic attacks at all adjacent targets, including allies."
+    },
+    "bonusAbility": {
+      "effectId": "power-surge",
+      "name": "Power Surge",
+      "description": "When you are not at full health, your magic attacks gain 1 extra die."
+    },
+    "defaultInventory": [{ "itemId": "potion", "count": 2 }, { "itemId": "food", "count": 1 }],
+    "defaultSkills": ["knowledge"],
+    "sprite": "warlock"
+  }
+]

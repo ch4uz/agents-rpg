@@ -1,0 +1,116 @@
+[
+  {
+    "id": "giant-rat",
+    "name": "Giant Rat",
+    "pools": { "melee": 1, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 1,
+    "healthTotal": 1,
+    "normalAttack": { "kind": "melee", "name": "Horrid Bite", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Pack Attack",
+      "description": "If an adjacent target is engaged, you can make a melee attack at that target with 1 extra die."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Coward",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares."
+    },
+    "sprite": "giant-rat"
+  },
+  {
+    "id": "king-rat",
+    "name": "King Rat",
+    "pools": { "melee": 2, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 0,
+    "healthTotal": 3,
+    "normalAttack": { "kind": "melee", "name": "Horrid Bite", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Pack Attack",
+      "description": "If an adjacent target is engaged, melee attack at that target with 1 extra die."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Coward",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares."
+    },
+    "sprite": "king-rat"
+  },
+  {
+    "id": "thorn-wisp",
+    "name": "Thorn-wisp",
+    "pools": { "melee": 1, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 1,
+    "healthTotal": 1,
+    "normalAttack": { "kind": "melee", "name": "Bramble Sting", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Swarm",
+      "description": "If an adjacent target is engaged, melee attack at that target with 1 extra die."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Skittish",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares."
+    },
+    "sprite": "thorn-wisp"
+  },
+  {
+    "id": "dryad-nimue",
+    "name": "Nimue, the Grieving Dryad",
+    "pools": { "melee": 0, "ranged": 0, "magic": 2, "armor": 2 },
+    "dex": 1,
+    "healthTotal": 3,
+    "normalAttack": { "kind": "magic", "name": "Strangling Vine", "range": 3, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Verdant Snare",
+      "description": "Magic attack at an adjacent target with 1 extra die; the snare grips for a beat."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Forest's Sorrow",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares toward the nearest tree."
+    },
+    "sprite": "dryad-nimue"
+  },
+  {
+    "id": "goblin",
+    "name": "Goblin",
+    "pools": { "melee": 1, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 1,
+    "healthTotal": 1,
+    "normalAttack": { "kind": "melee", "name": "Rusty Stab", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Gang Up",
+      "description": "If an adjacent target is engaged, you can make a melee attack at that target with 1 extra die."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Skitter",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares."
+    },
+    "sprite": "goblin"
+  },
+  {
+    "id": "goblin-warboss",
+    "name": "Goblin Warboss",
+    "pools": { "melee": 2, "ranged": 0, "magic": 0, "armor": 2 },
+    "dex": 0,
+    "healthTotal": 3,
+    "normalAttack": { "kind": "melee", "name": "Club Smash", "range": 1, "damageMod": 0 },
+    "specialAction": {
+      "effectId": "pack-attack",
+      "name": "Warboss's Call",
+      "description": "If an adjacent target is engaged, melee attack at that target with 1 extra die."
+    },
+    "bonusAbility": {
+      "effectId": "coward",
+      "name": "Wily",
+      "description": "When you've been attacked since your last turn, you can move 2 extra squares."
+    },
+    "sprite": "goblin-warboss"
+  }
+]

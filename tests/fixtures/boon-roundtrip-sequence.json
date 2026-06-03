@@ -1,0 +1,22 @@
+{
+  "seed": "boon-roundtrip-seed",
+  "narrativeActor": "h",
+  "characters": [
+    {
+      "id": "h",
+      "name": "Hero",
+      "kind": "hero",
+      "archetype": "warrior",
+      "pools": { "melee": 2, "ranged": 0, "magic": 0, "armor": 2 },
+      "healthTotal": 3,
+      "pos": { "x": 0, "y": 0 },
+      "normalAttack": { "kind": "melee", "name": "Slashing Strike", "range": 1, "damageMod": 0 },
+      "specialAction": { "id": "whirlwind-attack" },
+      "bonusAbility": { "id": "teamwork" }
+    }
+  ],
+  "actions": [
+    { "actorId": "h", "action": { "kind": "use_boon", "boonId": "fixture-heal-boon" } },
+    { "actorId": "h", "action": { "kind": "end_turn" } }
+  ]
+}

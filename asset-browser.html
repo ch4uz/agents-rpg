@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>agents-rpg · asset browser</title>
+<style>
+  :root {
+    --bg: #1a1410;
+    --panel: #2a201a;
+    --border: #5a4838;
+    --ink: #e8dccb;
+    --ink-dim: #a89888;
+    --accent: #d8a85a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    padding: 24px 32px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 22px; color: var(--accent); }
+  header p { margin: 4px 0 0; color: var(--ink-dim); }
+  main {
+    padding: 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  section { margin-bottom: 40px; }
+  section > h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--accent);
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 6px;
+  }
+  section > h2 .meta {
+    font-size: 12px;
+    color: var(--ink-dim);
+    font-weight: normal;
+    margin-left: 8px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .card .frame {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background:
+      linear-gradient(45deg, #1a1410 25%, transparent 25%),
+      linear-gradient(-45deg, #1a1410 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1a1410 75%),
+      linear-gradient(-45deg, transparent 75%, #1a1410 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #2f261d;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+  .card .frame img {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    max-width: 100%;
+    max-height: 100%;
+    transform: scale(3);
+    transform-origin: center;
+  }
+  .card .name { font-weight: 600; }
+  .card .path {
+    font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--ink-dim);
+    text-align: center;
+    word-break: break-all;
+  }
+  .card .dims { font: 11px ui-monospace, monospace; color: var(--ink-dim); }
+
+  .tileset-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .tileset-card .frame {
+    background-color: #2f261d;
+    border: 1px solid var(--border);
+    padding: 12px;
+  }
+  .tileset-card .frame img {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: block;
+    transform: scale(4);
+    transform-origin: top left;
+    margin-bottom: 12px;
+  }
+  .tileset-card .frame-wrap {
+    overflow: hidden;
+  }
+  .tileset-card .info dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+    margin: 0;
+  }
+  .tileset-card .info dt { color: var(--ink-dim); font: 12px ui-monospace, monospace; }
+  .tileset-card .info dd { margin: 0; font: 12px ui-monospace, monospace; word-break: break-all; }
+  .tileset-card .info h3 { margin: 0 0 8px; font-size: 14px; }
+  .tileset-card .info .desc { color: var(--ink-dim); font-size: 12px; margin: 8px 0; }
+
+  details summary {
+    cursor: pointer;
+    color: var(--ink-dim);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  details pre {
+    font: 11px/1.4 ui-monospace, monospace;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px;
+    border-radius: 4px;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .note {
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+  .note code {
+    color: var(--ink);
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+  .scene-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  #scene-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 1px solid var(--border);
+    background: #000;
+    max-width: 100%;
+  }
+  .scene-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .scene-controls button {
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font: 13px -apple-system, sans-serif;
+  }
+  .scene-controls button:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>agents-rpg · asset browser</h1>
+  <p>Tavern basement tileset and props · SNES 16-bit pixel art · all sprites scaled ×3 / ×4 with pixel-perfect rendering</p>
+</header>
+
+<main>
+  <div class="note">
+    Serving tip: run <code>python3 -m http.server 8000</code> from the repo root, then open <code>http://localhost:8000/asset-browser.html</code>.
+  </div>
+
+  <section>
+    <h2>Stone basement Wang tileset <span class="meta">25 tiles · 16×16 · cobblestone floor ↔ mortared stone wall</span></h2>
+    <div class="tileset-card">
+      <div class="frame-wrap">
+        <div class="frame">
+          <img src="assets/maps/tavern-basement-stone/tileset.png" alt="stone tileset" />
+        </div>
+      </div>
+      <div class="info">
+        <h3>tavern-basement-stone</h3>
+        <div class="desc">Wang tileset with full floor↔wall transition. Drop-in for <code>tavern-basement</code> if you swap manifest paths.</div>
+        <dl>
+          <dt>image</dt><dd>assets/maps/tavern-basement-stone/tileset.png</dd>
+          <dt>meta</dt><dd>assets/maps/tavern-basement-stone/tileset.json</dd>
+          <dt>tile size</dt><dd>16 × 16</dd>
+          <dt>transition</dt><dd>full (size 1.0)</dd>
+          <dt>view</dt><dd>high top-down</dd>
+        </dl>
+        <details>
+          <summary>Inline tileset.json (load on expand)</summary>
+          <pre id="tileset-json">loading…</pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Props <span class="meta">7 sprites · scaled ×3 · transparent backgrounds shown over checkerboard</span></h2>
+    <div class="grid" id="props-grid"></div>
+  </section>
+
+  <section>
+    <h2>Sample scene <span class="meta">12×9 cells · perimeter wall · props placed on the cobblestone floor</span></h2>
+    <div class="scene-wrap">
+      <canvas id="scene-canvas"></canvas>
+      <div class="scene-controls">
+        <button id="scene-shuffle">Shuffle props</button>
+        <span id="scene-status">loading…</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Compare · existing wood-floor tileset</h2>
+    <div class="tileset-card">
+      <div class="frame-wrap">
+        <div class="frame">
+          <img src="assets/maps/tavern-basement/tileset.png" alt="wood tileset" />
+        </div>
+      </div>
+      <div class="info">
+        <h3>tavern-basement (existing)</h3>
+        <div class="desc">Currently wired into the game. Wood floor → stone-brick wall, 32×32 tiles, no full transition.</div>
+        <dl>
+          <dt>image</dt><dd>assets/maps/tavern-basement/tileset.png</dd>
+          <dt>meta</dt><dd>assets/maps/tavern-basement/tileset.json</dd>
+          <dt>tile size</dt><dd>32 × 32</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  const props = [
+    { name: "wooden-barrel", path: "assets/props/wooden-barrel/south.png", size: "32×32" },
+    { name: "wooden-crate",  path: "assets/props/wooden-crate/south.png",  size: "32×32" },
+    { name: "wine-cask",     path: "assets/props/wine-cask/south.png",     size: "48×48" },
+    { name: "sack-pile",     path: "assets/props/sack-pile/south.png",     size: "32×32" },
+    { name: "wooden-table",  path: "assets/props/wooden-table/south.png",  size: "48×48" },
+    { name: "brazier",       path: "assets/props/brazier/south.png",       size: "32×32" },
+    { name: "barrel-stack",  path: "assets/props/barrel-stack/south.png",  size: "existing" },
+  ];
+
+  const grid = document.getElementById("props-grid");
+  for (const p of props) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="frame"><img src="${p.path}" alt="${p.name}" /></div>
+      <div class="name">${p.name}</div>
+      <div class="dims">${p.size}</div>
+      <div class="path">${p.path}</div>
+    `;
+    grid.appendChild(card);
+  }
+
+  const jsonEl = document.getElementById("tileset-json");
+  const detailsEl = jsonEl.closest("details");
+  detailsEl.addEventListener("toggle", async () => {
+    if (!detailsEl.open || jsonEl.dataset.loaded) return;
+    try {
+      const r = await fetch("assets/maps/tavern-basement-stone/tileset.json");
+      const j = await r.json();
+      jsonEl.textContent = JSON.stringify(j, null, 2);
+      jsonEl.dataset.loaded = "1";
+    } catch (e) {
+      jsonEl.textContent = "failed to load: " + e;
+    }
+  });
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("failed to load " + src));
+      img.src = src;
+    });
+  }
+
+  // Tileset Wang lookup: 4 corners (NW,NE,SE,SW) where each is "lower"|"upper"
+  // → bounding box in the spritesheet. We ignore the transition-variant tiles
+  // and use the 16 base tiles keyed by 4 bits.
+  async function buildScene() {
+    const status = document.getElementById("scene-status");
+    status.textContent = "loading tileset…";
+    const meta = await (await fetch("assets/maps/tavern-basement-stone/tileset.json")).json();
+    const tileImg = await loadImage("assets/maps/tavern-basement-stone/tileset.png");
+
+    const TILE = meta.tile_size.width; // 16
+    const lookup = new Array(16); // key 0..15 → bbox
+    // PixelLab's transition_size=1.0 tilesets encode "transition" corners
+    // (the shadow / wall-base meeting the floor) as a third terrain state.
+    // For binary Wang lookup we collapse transition→upper.
+    const bit = c => (c === "upper" || c === "transition" ? 1 : 0);
+    for (const t of meta.tileset_data.tiles) {
+      const key = (bit(t.corners.NW) << 3)
+                | (bit(t.corners.NE) << 2)
+                | (bit(t.corners.SE) << 1)
+                | (bit(t.corners.SW) << 0);
+      if (!lookup[key]) lookup[key] = t.bounding_box;
+    }
+    // PixelLab omits the two pure-diagonal patterns (5 = NE+SW only,
+    // 10 = NW+SE only) — they don't render well with the transition system.
+    // Fall back to the all-upper tile so a stray diagonal still renders.
+    if (!lookup[5])  lookup[5]  = lookup[15];
+    if (!lookup[10]) lookup[10] = lookup[15];
+
+    // Preload props
+    const propDefs = [
+      { id: "wooden-barrel", src: "assets/props/wooden-barrel/south.png" },
+      { id: "wooden-crate",  src: "assets/props/wooden-crate/south.png" },
+      { id: "wine-cask",     src: "assets/props/wine-cask/south.png" },
+      { id: "sack-pile",     src: "assets/props/sack-pile/south.png" },
+      { id: "wooden-table",  src: "assets/props/wooden-table/south.png" },
+      { id: "brazier",       src: "assets/props/brazier/south.png" },
+    ];
+    const propImgs = {};
+    for (const p of propDefs) propImgs[p.id] = await loadImage(p.src);
+
+    const SCALE = 3;
+    const W = 12, H = 9; // cells
+    const canvas = document.getElementById("scene-canvas");
+    canvas.width = W * TILE * SCALE;
+    canvas.height = H * TILE * SCALE;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    // Vertex grid: (W+1) × (H+1). "upper" on the perimeter, "lower" inside.
+    // Also place a small interior wall stub to show the algorithm handles
+    // arbitrary topology.
+    function vertex(x, y) {
+      if (x === 0 || y === 0 || x === W || y === H) return "upper";
+      // A 2-cell-wide wall stub jutting in from the right side at row 5
+      if ((x === 8 || x === 9) && y === 5) return "upper";
+      return "lower";
+    }
+
+    function drawTiles() {
+      for (let cy = 0; cy < H; cy++) {
+        for (let cx = 0; cx < W; cx++) {
+          const bit = (vx, vy) => (vertex(vx, vy) === "upper" ? 1 : 0);
+          const key = (bit(cx, cy) << 3)
+                    | (bit(cx + 1, cy) << 2)
+                    | (bit(cx + 1, cy + 1) << 1)
+                    | (bit(cx, cy + 1) << 0);
+          const bb = lookup[key];
+          ctx.drawImage(
+            tileImg, bb.x, bb.y, bb.width, bb.height,
+            cx * TILE * SCALE, cy * TILE * SCALE,
+            TILE * SCALE, TILE * SCALE
+          );
+        }
+      }
+    }
+
+    function drawProp(id, cx, cy) {
+      // cx,cy = cell-space coordinate of the prop CENTER.
+      // Props are sized in their native pixel dimensions × SCALE; we anchor
+      // by the center of the bottom row of the sprite for a "feet on floor"
+      // feel.
+      const img = propImgs[id];
+      const w = img.width * SCALE;
+      const h = img.height * SCALE;
+      const px = cx * TILE * SCALE - w / 2;
+      const py = cy * TILE * SCALE - h + (TILE * SCALE) / 2;
+      ctx.drawImage(img, 0, 0, img.width, img.height, px, py, w, h);
+    }
+
+    function shuffleRng() {
+      const seed = (Math.random() * 1e9) | 0;
+      let s = seed || 1;
+      return () => (s = (s * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    }
+
+    function placeProps() {
+      const rng = shuffleRng();
+      const free = [];
+      // Walkable cells: interior, not on the interior wall stub
+      for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
+          const vNW = vertex(x, y),       vNE = vertex(x + 1, y);
+          const vSW = vertex(x, y + 1),   vSE = vertex(x + 1, y + 1);
+          if (vNW === "lower" && vNE === "lower" && vSW === "lower" && vSE === "lower") {
+            free.push({ x: x + 0.5, y: y + 0.5 });
+          }
+        }
+      }
+      // Fisher-Yates with seeded rng
+      for (let i = free.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [free[i], free[j]] = [free[j], free[i]];
+      }
+
+      drawTiles();
+      // Wine cask + table are wider; bias them away from the right-edge stub
+      const pickOrder = ["wine-cask", "wooden-table", "brazier", "wooden-barrel", "wooden-crate", "sack-pile"];
+      for (let i = 0; i < pickOrder.length && i < free.length; i++) {
+        const { x, y } = free[i];
+        drawProp(pickOrder[i], x, y);
+      }
+    }
+
+    placeProps();
+    status.textContent = `rendered ${W}×${H} cells · 16 unique tiles · 6 props composited`;
+    document.getElementById("scene-shuffle").addEventListener("click", placeProps);
+  }
+
+  buildScene().catch(err => {
+    document.getElementById("scene-status").textContent = "error: " + err.message;
+    console.error(err);
+  });
+</script>
+</body>
+</html>

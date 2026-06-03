@@ -1,0 +1,34 @@
+{
+  "seed": "item-roundtrip-seed",
+  "narrativeActor": "h1",
+  "characters": [
+    {
+      "id": "h1",
+      "name": "Healer",
+      "kind": "hero",
+      "archetype": "healer",
+      "pools": { "melee": 0, "ranged": 0, "magic": 2, "armor": 1 },
+      "healthTotal": 3,
+      "pos": { "x": 1, "y": 1 },
+      "normalAttack": { "kind": "magic", "name": "Searing Light", "range": 4, "damageMod": 0 },
+      "specialAction": { "id": "healing-touch", "name": "", "description": "" },
+      "bonusAbility": { "id": "potion-brewer", "name": "", "description": "" }
+    },
+    {
+      "id": "h2",
+      "name": "Hunter",
+      "kind": "hero",
+      "archetype": "hunter",
+      "pools": { "melee": 0, "ranged": 2, "magic": 0, "armor": 2 },
+      "healthTotal": 3,
+      "pos": { "x": 2, "y": 1 },
+      "normalAttack": { "kind": "ranged", "name": "Arrow Shot", "range": 6, "damageMod": 0 },
+      "specialAction": { "id": "split-shot", "name": "", "description": "" },
+      "bonusAbility": { "id": "evasive-maneuver", "name": "", "description": "" }
+    }
+  ],
+  "actions": [
+    { "actorId": "h1", "action": { "kind": "use_item", "itemId": "potion", "targetId": "h2" } },
+    { "actorId": "h1", "action": { "kind": "end_turn" } }
+  ]
+}

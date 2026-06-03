@@ -1,0 +1,23 @@
+{
+  "seed": "integration-1",
+  "adventureFile": "adventures/stub-one-scene.json",
+  "heroIds": ["warrior", "warlock-fire"],
+  "humanCharacterId": "h-human",
+  "humanArchetype": "hunter",
+  "actions": [
+    { "actor": "dm", "action": { "kind": "set_scene", "sceneId": "stub-cell" } },
+    { "actor": "dm", "action": { "kind": "narrate", "text": "You stand in a dim stone room." } },
+    {
+      "actor": "dm",
+      "action": {
+        "kind": "start_combat",
+        "heroSide": ["h-warrior", "h-warlock-fire", "h-human"],
+        "monsterSide": ["m-giant-rat-1"]
+      }
+    },
+    { "actor": "dm", "action": { "kind": "end_combat" } },
+    { "actor": "dm", "action": { "kind": "request_action", "actorId": "h-warrior" } },
+    { "actor": "h-warrior", "action": { "kind": "say", "text": "Stand back." } },
+    { "actor": "h-warrior", "action": { "kind": "end_turn" } }
+  ]
+}

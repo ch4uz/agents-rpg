@@ -1,0 +1,124 @@
+{
+  "id": "goblin-warren",
+  "title": "The Goblin Warren",
+  "estimatedDurationMin": 30,
+  "scenes": [
+    {
+      "id": "mine-entrance",
+      "intro": "You're sharing a midday meal at the trailhead when Marta the herbalist comes running down from the old Copperbottom mine, wringing her apron: \"Goblins! A whole raiding band boiled up out of the deep shafts — and Fern, my apprentice, went up to gather glow-caps this morning and they've DRAGGED HER OFF down the tunnels!\" Every eye turns to you. Your first real adventure: get into that mine, beat the goblins, and bring Fern home.\n\nPast the broken winch the air goes cold and smells of pitch and unwashed goblin. Stacked crates and toppled barrels clutter the gallery, and a few squat kegs are daubed with a crude skull and trail a stub of fuse from the bung — black-powder kegs the goblins left primed, ready to blow at a spark. Then the chittering starts, and the goblins turn from the shadows, rusty knives out, to face you.",
+      "opening": {
+        "before": "Three young heroes — Gareth, Kael, and Bran — are sharing a midday meal at the trailhead when Marta the herbalist comes running down from the old Copperbottom mine, wringing her apron: \"Goblins! A whole raiding band boiled up out of the deep shafts — and Fern, my apprentice, went up to gather glow-caps this morning and they've dragged her off down the tunnels!\" Every eye turns to your little group. Your first real adventure: get into that mine, beat the goblins, and bring Fern home.",
+        "after": "Past the broken winch the air goes cold and smells of pitch and unwashed goblin. Stacked crates and toppled barrels clutter the gallery, and a few squat kegs are daubed with a crude skull and trail a stub of fuse from the bung — black-powder kegs the goblins left primed, ready to blow at a spark. Then the chittering starts, and the goblins turn from the shadows, rusty knives out, to face you.",
+        "cast": [
+          { "name": "Gareth", "portrait": "heroes/warrior/south.png" },
+          { "name": "Kael", "portrait": "heroes/warlock/south.png" },
+          { "name": "Bran", "portrait": "heroes/hunter/south.png" },
+          { "name": "Fern", "portrait": "heroes/healer/south.png" },
+          { "name": "Marta" }
+        ]
+      },
+      "map": {
+        "width": 13,
+        "height": 9,
+        "background": "mine-entrance",
+        "walls": false,
+        "entry": [
+          { "x": 1, "y": 1 }, { "x": 1, "y": 2 }, { "x": 2, "y": 1 }
+        ],
+        "obstacles": [
+          { "type": "wooden-crate", "x": 6, "y": 0 },
+          { "type": "wooden-crate", "x": 6, "y": 1 },
+          { "type": "wooden-crate", "x": 6, "y": 2 },
+          { "type": "oil-cask",     "x": 6, "y": 4, "durability": 1, "explosive": { "damage": 1, "radius": 1 } },
+          { "type": "wooden-crate", "x": 6, "y": 6 },
+          { "type": "wooden-crate", "x": 6, "y": 7 },
+          { "type": "wooden-crate", "x": 6, "y": 8 },
+          { "type": "wooden-crate", "x": 4, "y": 1, "cover": true },
+          { "type": "barrel-stack", "x": 3, "y": 3, "cover": true },
+          { "type": "barrel-stack", "x": 4, "y": 6, "cover": true },
+          { "type": "barrel-stack", "x": 8, "y": 3, "cover": true },
+          { "type": "barrel-stack", "x": 9, "y": 6, "cover": true },
+          { "type": "oil-cask",     "x": 9, "y": 2, "durability": 1, "explosive": { "damage": 1, "radius": 1 }, "cover": true },
+          { "type": "oil-cask",     "x": 8, "y": 7, "durability": 1, "explosive": { "damage": 1, "radius": 1 } }
+        ],
+        "decorations": [
+          { "type": "sack-pile",   "x": 2, "y": 6 },
+          { "type": "bone-pile",   "x": 10, "y": 1 },
+          { "type": "rubble-pile", "x": 12, "y": 4 },
+          { "type": "sack-pile",   "x": 11, "y": 8 }
+        ],
+        "exits": [
+          { "to": "goblin-warren", "at": { "x": 0, "y": 8 }, "trigger": "step-on" }
+        ]
+      },
+      "monsters": [
+        { "type": "goblin", "startPos": { "x": 10, "y": 2 } },
+        { "type": "goblin", "startPos": { "x": 11, "y": 4 } },
+        { "type": "goblin", "startPos": { "x": 10, "y": 5 } },
+        { "type": "goblin", "startPos": { "x": 9,  "y": 7 } }
+      ],
+      "tactics": "Heroes enter at the north-west mouth of the gallery (around x=1-2, y=1-2); four goblins are spread across the east half (x=9-11), squabbling over looted sacks. A wall of stacked CRATES runs down the middle of the gallery (x=6, with crates at y=0-2 and y=6-8), splitting the room into a NORTH lane (y=0-1) and a SOUTH lane (y=6-8), with a black-powder keg wedged into the middle of the wall at (6,4) and gaps at y=3 and y=5 to slip through. Barrels and a crate sit as scattered cover (around (3,3), (4,1), and (4,6) on the heroes' side, (8,3) and (9,6) on the goblins' side). The crate wall fully blocks movement AND line-of-sight, so a ranged or magic shot fired through it takes a cover penalty — pick clean lanes and use a crate to break an enemy's line on you. The goblins charge the closest hero and gang up: if two goblins end adjacent to ONE hero, their Gang Up attack gains a die — so don't let a single hero get surrounded with no support. The heroes' counter is the same rule in reverse — two heroes adjacent to one goblin 'engage' it, and the warrior's Teamwork makes him strike harder. Push through one lane together, focus one goblin at a time, and keep the party within supporting distance. THE POWDER KEGS are the set-piece play — three skull-marked black-powder kegs, each with a stub of fuse, sit on the grid: (6,4) wedged into the central crate-wall, (9,2) back among the looted sacks right beside the goblins' nest, and (8,7) in the south-lane chokepoint. Smashing a keg with attack_object makes it BURST — every creature adjacent (Chebyshev 1) takes a hit, FOES AND HEROES ALIKE, including whoever struck it. The teamwork combo is to LURE two or more goblins next to a keg (the (9,2) keg already sits beside their nest; the (6,4) and (8,7) kegs sit where goblins funnel toward the heroes), then DETONATE it with a hero who is NOT adjacent — ideally the hunter or warlock at range, since a melee hero would have to stand next to it and catch the blast too. Note the (6,4) keg is part of the central wall: popping it also blows a gap in the crate barricade. One good ranged hit can soften or drop a clustered pack; a careless melee swing torches a teammate. Reward heroes who set the trap together; let a lone, mistimed pop singe its own caster. When the last goblin falls, a black mine-shaft yawns open in the south-west corner (0,8), dropping toward the warren below — and a faint, frightened cry drifts up from the dark.",
+      "abilityTests": [
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Catch a girl's muffled cries echoing up the shaft — it's Fern, the herbalist's apprentice, dragged down after she came for glow-caps. Call out to the party which way her voice sounds loudest." },
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Recall that the Copperbottom mine gets the odd lone goblin scout, but never a whole raiding band like this. Something deep below has stirred the warren up." }
+      ],
+      "conclusion": "The last goblin yelps and bolts into a crack in the wall. The gallery reeks of pitch, but it's yours. In the south-west corner an old mine-shaft drops away into the dark — the goblins came up from a warren far below. A faint, muffled cry echoes up: 'Help! Please — is someone up there?' It's Fern, the herbalist's apprentice — the raiders dragged her down to their warboss's den.",
+      "transitions": [{ "to": "goblin-warren", "trigger": "all-monsters-ko" }]
+    },
+    {
+      "id": "goblin-warren",
+      "intro": "You climb down the shaft into a hot, reeking cavern that smells like a goblin's whole warren at once. A jagged cave-in of stone and splintered mine-timber runs floor-to-ceiling across the middle of the cave, sealing the way on — packed too hard and too solid to chip with a blade or a bolt. But someone's been down here: a fat black-powder keg sits abandoned on the floor near the rockfall, its skull-marked fuse still dry. Beyond the rubble, claws scrape and something big paces in the dark. A huge goblin rears up — a battered bone-and-iron helm crammed on its head, a spiked club in its fist — and bellows at you. The Goblin Warboss. Its raiders swarm around it. And there, lashed to a stake at the back of the den behind them, is Fern — wrists bound in mine-rope, struggling, very much alive and very much in reach of goblin knives. 'You came!' she gasps. 'Hurry — I can't get loose!' But the wall of rubble stands between you and all of them.",
+      "map": {
+        "width": 15,
+        "height": 11,
+        "background": "goblin-warren",
+        "walls": false,
+        "entry": [
+          { "x": 1, "y": 4 }, { "x": 1, "y": 5 }, { "x": 1, "y": 6 }
+        ],
+        "obstacles": [
+          { "type": "stalagmite", "x": 6, "y": 3 },
+          { "type": "stalagmite", "x": 6, "y": 4 },
+          { "type": "stalagmite", "x": 6, "y": 5 },
+          { "type": "stalagmite", "x": 6, "y": 6 },
+          { "type": "stalagmite", "x": 6, "y": 7 },
+          { "type": "oil-cask", "x": 4, "y": 5, "pushable": true, "explosive": { "damage": 1, "radius": 1 } }
+        ],
+        "decorations": [],
+        "wallCells": [
+          { "x": 0, "y": 0 }, { "x": 1, "y": 0 }, { "x": 2, "y": 0 }, { "x": 3, "y": 0 }, { "x": 4, "y": 0 }, { "x": 5, "y": 0 }, { "x": 6, "y": 0 }, { "x": 7, "y": 0 }, { "x": 8, "y": 0 }, { "x": 9, "y": 0 }, { "x": 10, "y": 0 }, { "x": 11, "y": 0 }, { "x": 12, "y": 0 }, { "x": 13, "y": 0 }, { "x": 14, "y": 0 },
+          { "x": 0, "y": 1 }, { "x": 1, "y": 1 }, { "x": 2, "y": 1 }, { "x": 3, "y": 1 }, { "x": 4, "y": 1 }, { "x": 5, "y": 1 }, { "x": 6, "y": 1 }, { "x": 7, "y": 1 }, { "x": 14, "y": 1 },
+          { "x": 0, "y": 2 }, { "x": 1, "y": 2 }, { "x": 2, "y": 2 }, { "x": 3, "y": 2 }, { "x": 4, "y": 2 }, { "x": 5, "y": 2 }, { "x": 6, "y": 2 }, { "x": 14, "y": 2 },
+          { "x": 0, "y": 3 }, { "x": 1, "y": 3 }, { "x": 10, "y": 3 }, { "x": 14, "y": 3 },
+          { "x": 0, "y": 4 }, { "x": 14, "y": 4 },
+          { "x": 0, "y": 5 }, { "x": 14, "y": 5 },
+          { "x": 0, "y": 6 }, { "x": 14, "y": 6 },
+          { "x": 0, "y": 7 }, { "x": 1, "y": 7 }, { "x": 11, "y": 7 }, { "x": 14, "y": 7 },
+          { "x": 0, "y": 8 }, { "x": 1, "y": 8 }, { "x": 2, "y": 8 }, { "x": 3, "y": 8 }, { "x": 4, "y": 8 }, { "x": 5, "y": 8 }, { "x": 6, "y": 8 }, { "x": 14, "y": 8 },
+          { "x": 0, "y": 9 }, { "x": 1, "y": 9 }, { "x": 2, "y": 9 }, { "x": 3, "y": 9 }, { "x": 4, "y": 9 }, { "x": 5, "y": 9 }, { "x": 6, "y": 9 }, { "x": 7, "y": 9 }, { "x": 14, "y": 9 },
+          { "x": 0, "y": 10 }, { "x": 1, "y": 10 }, { "x": 2, "y": 10 }, { "x": 3, "y": 10 }, { "x": 4, "y": 10 }, { "x": 5, "y": 10 }, { "x": 6, "y": 10 }, { "x": 7, "y": 10 }, { "x": 8, "y": 10 }, { "x": 9, "y": 10 }, { "x": 10, "y": 10 }, { "x": 11, "y": 10 }, { "x": 12, "y": 10 }, { "x": 13, "y": 10 }, { "x": 14, "y": 10 }
+        ],
+        "exits": [],
+        "captives": [
+          { "archetype": "healer", "characterId": "p3_healer", "name": "Fern", "startPos": { "x": 11, "y": 8 } }
+        ],
+        "chests": [
+          { "id": "loot-chest", "pos": { "x": 3, "y": 3 }, "contents": "shiny-coin", "name": "Goblin loot-chest", "description": "a battered chest the goblins crammed with stolen coin — open_chest beside it to grab a shiny gold coin" }
+        ]
+      },
+      "monsters": [
+        { "type": "goblin-warboss", "startPos": { "x": 12, "y": 5 } },
+        { "type": "goblin",         "startPos": { "x": 9,  "y": 3 } },
+        { "type": "goblin",         "startPos": { "x": 11, "y": 2 } },
+        { "type": "goblin",         "startPos": { "x": 9,  "y": 7 } }
+      ],
+      "tactics": "Heroes enter from the narrow shaft mouth on the WEST (x=1, y=4-6). The cavern walls are solid rock; everyone moves only on the open floor. A SOLID CAVE-IN of rubble and mine-timber fills column x=6 from y=3 to y=7, joining the rock top and bottom — it completely separates the heroes (west, x=1-5) from the Goblin Warboss and three goblins (east, x=8-13). It blocks movement AND line-of-sight: until a gap is opened NOBODY can cross and NO ranged or magic shot can reach the far side. THE RUBBLE IS PACKED TOO HARD TO SMASH — no sword, arrow, or spell can chip it, and attack_object on it simply fails. The ONLY way through is the PUSH-AND-DETONATE puzzle, and it demands teamwork: an abandoned black-powder keg sits at (4,5), one cell shy of the wall with an empty gap at (5,5) between them. (1) PUSH the keg. A hero stands WEST of it (at (3,5)) and uses push_object to shove the keg one cell east into (5,5) — now flush against the rubble. push_object needs no roll, but it costs that hero's whole action, so they can't also fight that turn. (2) DETONATE it. A second hero — one who is NOT adjacent to the keg, ideally the ranged hunter or warlock standing back at x<=3 — smashes the keg with attack_object. It BURSTS: the blast blows the packed rubble within one cell apart (clearing (6,4),(6,5),(6,6)) and opens a three-tile breach. WARNING: the blast also hits any creature within one cell, friend or foe — so the pusher must step clear and nobody should be hugging the keg when it goes. Detonating the keg BEFORE it's pushed adjacent is wasted — the blast won't reach the wall. So the play is: one hero pushes, everyone clears the blast zone, a ranged hero pops it from safety, then the party pours through the breach (only one or two fit per turn — sequence it). Once across, the Warboss is the priority: it has 3 health and clubs with 2 dice, so FOCUS FIRE and swarm it together rather than each chipping a different goblin. Two heroes adjacent to the Warboss 'engage' it (the warrior's Teamwork = +1 die), and the rock pillars at (10,3) and (11,7) give ranged heroes cover to break the Warboss's line of sight. The raiders fight to protect their boss; play them with hungry, simple menace. THE RESCUE: Fern the healer is bound and IMMOBILIZED at (11,8), at the back of the Warboss's den beyond the wall — she cannot move or fight until freed. A hero who reaches her (stands adjacent) and calls free_ally rolls to cut her loose; once freed she joins the fight as a fourth hero (a healer — invaluable). But she is helpless and exposed: the goblins can knife her while she's bound, and if they KO her before the party breaks through she is lost. The goblins, left to their own appetite, will go for the easy, struggling prey — so the party must breach FAST and peel the pack off her. As DM, play that pressure: let the goblins menace the captive, and reward the heroes who fight through to her. When the Warboss and his goblins are all down, the warren is safe and Fern (if freed) is reunited with the party — or, if she fell, the heroes carry her home. THE COIN TRICK: a battered goblin loot-chest sits on the west side at (3,3). A hero who stands beside it can open_chest to grab a shiny gold coin, then throw_item (itemId \"shiny-coin\") to lob it onto a floor cell up to 4 squares away — and every goblin will break off the heroes to scramble for it (the first goblin there snatches it). It is a teamwork tool, not a kill: use it to lure the pack off bound Fern, scatter a gang-up, or freeze the goblins a turn while someone breaches. As DM, play the goblins' greed — narrate them lunging for the coin, eyes lit up — and reward heroes who set the bait to open a window for the others.",
+      "abilityTests": [
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Size up the rubble wall — the cave-in is packed too solid for any blade or bolt to break. But that abandoned powder keg by the wall could blow a hole, if someone shoved it flush against the rubble first. Call the plan out to the party." },
+        { "skill": "intelligence-tracking",  "difficulty": 4, "describe": "Read the goblin tracks — they all run up to the rockfall and through it, heading to the Warboss's den beyond, where Fern is bound." }
+      ],
+      "conclusion": "With a final blow the Goblin Warboss topples, his dented helm rolling into the dirt, and his raiders scatter shrieking into the cracks. If you cut Fern free, she sags against the stake rubbing her raw wrists, then grins through the grime: 'I knew you'd come. Now hold still — half of you are bleeding.' She's already reaching for her satchel of glow-caps. The herbalist's apprentice owes you her life, and she means to repay it the whole climb home. Time to head back up to daylight — you've earned a week of extra ice-cream.",
+      "transitions": [{ "to": "END", "trigger": "all-monsters-ko" }]
+    }
+  ]
+}

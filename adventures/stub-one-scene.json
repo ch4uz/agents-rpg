@@ -1,0 +1,23 @@
+{
+  "id": "stub-one-scene",
+  "title": "Stub: a single empty cell for engine integration tests",
+  "estimatedDurationMin": 5,
+  "scenes": [
+    {
+      "id": "stub-cell",
+      "intro": "You stand in a dim stone room. A single rat scurries in the corner.",
+      "map": {
+        "width": 8,
+        "height": 8,
+        "background": "stub-cell",
+        "obstacles": [],
+        "exits": []
+      },
+      "monsters": [{ "type": "giant-rat", "startPos": { "x": 5, "y": 5 } }],
+      "tactics": "Rat won't attack until attacked first.",
+      "abilityTests": [],
+      "conclusion": "The rat lies still. The room is quiet again.",
+      "transitions": [{ "to": "END", "trigger": "all-monsters-ko" }]
+    }
+  ]
+}

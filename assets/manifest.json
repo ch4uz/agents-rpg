@@ -1,0 +1,238 @@
+{
+  "heroes": {
+    "warrior": "heroes/warrior",
+    "hunter": "heroes/hunter",
+    "healer": "heroes/healer",
+    "healer-bound": "heroes/healer-bound/south.png",
+    "warlock": "heroes/warlock"
+  },
+  "monsters": {
+    "giant-rat": "monsters/giant-rat",
+    "king-rat": "monsters/king-rat",
+    "thorn-wisp": "monsters/thorn-wisp",
+    "dryad-nimue": "monsters/dryad-nimue",
+    "goblin": "monsters/goblin",
+    "goblin-warboss": "monsters/goblin-warboss"
+  },
+  "npcs": {
+    "mira": "npcs/mira",
+    "lyra": "npcs/lyra"
+  },
+  "tilesets": {
+    "tavern-basement": {
+      "image": "maps/tavern-basement/tileset.png",
+      "metadata": "maps/tavern-basement/tileset.json"
+    },
+    "rat-tunnel":          { "image": "maps/rat-tunnel/tileset.png",          "metadata": "maps/rat-tunnel/tileset.json" },
+    "mine-entrance":       { "image": "maps/mine-entrance/tileset.png",       "metadata": "maps/mine-entrance/tileset.json" },
+    "goblin-warren":       { "image": "maps/goblin-warren/tileset.png",       "metadata": "maps/goblin-warren/tileset.json" },
+    "forest-edge":      { "image": "maps/forest-grass/tileset.png", "metadata": "maps/forest-grass/tileset.json" },
+    "whispering-path":  { "image": "maps/forest-path/tileset.png",  "metadata": "maps/forest-path/tileset.json"  },
+    "briar-hollow":     { "image": "maps/forest-dark/tileset.png",  "metadata": "maps/forest-dark/tileset.json"  },
+    "wounded-oak":      { "image": "maps/forest-dark/tileset.png",  "metadata": "maps/forest-dark/tileset.json"  },
+    "dryad-grove":      { "image": "maps/forest-grass/tileset.png", "metadata": "maps/forest-grass/tileset.json" }
+  },
+  "props": {
+    "barrel-stack": "props/barrel-stack/south.png",
+    "wooden-barrel": "props/wooden-barrel/south.png",
+    "wooden-crate": "props/wooden-crate/south.png",
+    "wooden-table": "props/wooden-table/south.png",
+    "wine-cask": "props/wine-cask/south.png",
+    "oil-cask": "props/oil-cask/south.png",
+    "sack-pile": "props/sack-pile/south.png",
+    "brazier": "props/brazier/south.png",
+    "mossy-log": "props/mossy-log/south.png",
+    "glowing-mushroom": "props/glowing-mushroom/south.png",
+    "briar-patch": "props/briar-patch/south.png",
+    "stalagmite": "props/stalagmite/south.png",
+    "rubble-pile": "props/rubble-pile/south.png",
+    "bone-pile": "props/bone-pile/south.png",
+    "rat-hole": "props/rat-hole/south.png",
+    "chest": "props/chest/south.png"
+  },
+  "projectiles": {
+    "fire-bolt": "projectiles/fire-bolt",
+    "arrow": "projectiles/arrow",
+    "magic-bolt": "projectiles/magic-bolt",
+    "fire-impact": "projectiles/fire-impact.png"
+  },
+  "items": {},
+  "equipment": {},
+  "boons": {},
+  "dice": {
+    "default": "dice/perfect_little_dice_3cm.glb"
+  },
+  "animations": {
+    "warrior": {
+      "idle": {
+        "path": "heroes/warrior/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "heroes/warrior/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "heroes/warrior/anim/attack",
+        "frames": 6,
+        "fps": 10
+      },
+      "death": {
+        "path": "heroes/warrior/anim/death",
+        "frames": 7,
+        "fps": 8
+      },
+      "spawn": {
+        "path": "heroes/warrior/anim/spawn",
+        "frames": 5,
+        "fps": 6
+      }
+    },
+    "hunter": {
+      "idle": {
+        "path": "heroes/hunter/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "heroes/hunter/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "heroes/hunter/anim/attack",
+        "frames": 7,
+        "fps": 10
+      },
+      "death": {
+        "path": "heroes/hunter/anim/death",
+        "frames": 7,
+        "fps": 8
+      },
+      "spawn": {
+        "path": "heroes/hunter/anim/spawn",
+        "frames": 5,
+        "fps": 6
+      }
+    },
+    "healer": {
+      "idle": {
+        "path": "heroes/healer/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "heroes/healer/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "heroes/healer/anim/attack",
+        "frames": 6,
+        "fps": 10
+      },
+      "death": {
+        "path": "heroes/healer/anim/death",
+        "frames": 7,
+        "fps": 8
+      },
+      "spawn": {
+        "path": "heroes/healer/anim/spawn",
+        "frames": 5,
+        "fps": 6
+      }
+    },
+    "warlock": {
+      "idle": {
+        "path": "heroes/warlock/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "heroes/warlock/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "heroes/warlock/anim/attack",
+        "frames": 6,
+        "fps": 10
+      },
+      "death": {
+        "path": "heroes/warlock/anim/death",
+        "frames": 7,
+        "fps": 8
+      },
+      "spawn": {
+        "path": "heroes/warlock/anim/spawn",
+        "frames": 5,
+        "fps": 6
+      }
+    },
+    "giant-rat": {
+      "idle": {
+        "path": "monsters/giant-rat/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "monsters/giant-rat/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "monsters/giant-rat/anim/attack",
+        "frames": 7,
+        "fps": 10
+      },
+      "spawn": {
+        "path": "monsters/giant-rat/anim/spawn",
+        "frames": 8,
+        "fps": 6
+      }
+    },
+    "king-rat": {
+      "idle": {
+        "path": "monsters/king-rat/anim/idle",
+        "frames": 4,
+        "fps": 4
+      },
+      "walk": {
+        "path": "monsters/king-rat/anim/walk",
+        "frames": 4,
+        "fps": 8
+      },
+      "attack": {
+        "path": "monsters/king-rat/anim/attack",
+        "frames": 6,
+        "fps": 10
+      },
+      "death": {
+        "path": "monsters/king-rat/anim/death",
+        "frames": 7,
+        "fps": 8
+      },
+      "spawn": {
+        "path": "monsters/king-rat/anim/spawn",
+        "frames": 5,
+        "fps": 6
+      }
+    },
+    "goblin": {
+      "walk": {
+        "path": "monsters/goblin/anim/walk",
+        "frames": 4,
+        "fps": 8
+      }
+    },
+    "goblin-warboss": {
+      "walk": {
+        "path": "monsters/goblin-warboss/anim/walk",
+        "frames": 4,
+        "fps": 8
+      }
+    }
+  }
+}

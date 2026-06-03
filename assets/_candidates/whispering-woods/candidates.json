@@ -1,0 +1,75 @@
+{
+  "title": "Whispering Woods",
+  "style": "tiles-only · existing forest assets (regenerate on demand)",
+  "note": "Every scene renders from a Wang tileset (no single-PNG backgrounds). forest-edge + dryad-grove share the forest-grass tileset; briar-hollow + wounded-oak share forest-dark.",
+  "items": [
+    {
+      "id": "forest-edge-tileset", "name": "forest-edge — scene tileset", "type": "tileset", "files": ["forest-edge-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "soft mossy grass forest floor in dappled shadow, deep forest green tones, subtle grass blade texture, scattered tiny dark leaves and twigs, no flowers, classic pixel art top-down view", "upper": "narrow strip of packed brown dirt path edge, pixel art style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "whispering-path-tileset", "name": "whispering-path — scene tileset", "type": "tileset", "files": ["whispering-path-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "packed dirt forest path with dry brown leaves and small twigs, narrow worn trail in pixel art style, classic top-down view", "upper": "narrow strip of green moss at path edge, pixel art style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "briar-hollow-tileset", "name": "briar-hollow — scene tileset", "type": "tileset", "files": ["briar-hollow-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "dark damp forest floor with mossy grey stones, fallen branches, tangled thorny brown roots in pixel art style, classic top-down view, shadowy", "upper": "narrow strip of mossy stone edge, pixel art style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "wounded-oak-tileset", "name": "wounded-oak — scene tileset", "type": "tileset", "files": ["wounded-oak-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "dark damp forest floor with mossy grey stones, fallen branches, tangled thorny brown roots in pixel art style, classic top-down view, shadowy", "upper": "narrow strip of mossy stone edge, pixel art style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "dryad-grove-tileset", "name": "dryad-grove — scene tileset", "type": "tileset", "files": ["dryad-grove-tileset.png"], "status": "ready", "note": "",
+      "regen": { "kind": "tileset", "lower": "soft mossy grass forest floor in dappled shadow, deep forest green tones, subtle grass blade texture, scattered tiny dark leaves and twigs, no flowers, classic pixel art top-down view", "upper": "narrow strip of packed brown dirt path edge, pixel art style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "mossy-log", "name": "Mossy log", "type": "obstacle", "files": ["mossy-log.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "fallen mossy forest log with green moss patches, classic pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "briar-patch", "name": "Briar patch", "type": "obstacle", "files": ["briar-patch.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "tangled thorny briar patch with dark red thorns and brambles, classic pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "glowing-mushroom", "name": "Glowing mushroom", "type": "decoration", "files": ["glowing-mushroom.png"], "status": "ready", "note": "",
+      "regen": { "kind": "object", "description": "cluster of glowing blue-green fae mushrooms, soft glow, classic pixel art, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "mira", "name": "Mira (npc)", "type": "character", "files": ["mira.png"], "status": "ready", "note": "",
+      "regen": { "kind": "character", "description": "young human village girl, long brown hair, simple white dress, frightened and sad, fantasy RPG, 16-bit SNES pixel art", "heavy": true }
+    },
+    {
+      "id": "lyra", "name": "Lyra (npc)", "type": "character", "files": ["lyra.png"], "status": "ready", "note": "",
+      "regen": { "kind": "character", "description": "young human village girl child, light brown hair, simple dress, clover crown, fantasy RPG, 16-bit SNES pixel art", "heavy": true }
+    },
+    {
+      "id": "thorn-wisp", "name": "Thorn-wisp (monster)", "type": "character", "files": ["thorn-wisp.png"], "status": "ready", "note": "",
+      "regen": { "kind": "character", "description": "small spiky fae creature, glowing yellow eyes, needle teeth, body of brambles and thorns, fantasy RPG, 16-bit SNES pixel art", "heavy": true }
+    },
+    {
+      "id": "dryad-nimue", "name": "Dryad Nimue (monster)", "type": "character", "files": ["dryad-nimue.png"], "status": "ready", "note": "",
+      "regen": { "kind": "character", "description": "young dryad woman, leaves for hair, bark-textured green skin, grieving expression, fantasy RPG, 16-bit SNES pixel art", "heavy": true }
+    },
+    {
+      "id": "river-tileset", "name": "River tileset — grassy bank ↔ flowing water", "type": "tileset", "files": ["river-tileset.png"], "status": "pending", "note": "",
+      "regen": { "kind": "tileset", "lower": "soft mossy grass forest riverbank, deep forest green tones, subtle grass texture, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "clear flowing forest river water, blue-green with gentle ripples and surface reflections, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "transition": "wet pebbly shoreline with smooth stones and a little foam, damp waterline", "transition_size": 0.25, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "tree-pine", "name": "Pine tree", "type": "obstacle", "files": ["tree-pine.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "tall evergreen pine tree with dense dark green needles, seen from above, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 96, "height": 96, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "tree-oak", "name": "Oak tree", "type": "obstacle", "files": ["tree-oak.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "large broadleaf oak tree with a full round leafy green canopy, seen from above, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 96, "height": 96, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "tree-dead", "name": "Dead tree", "type": "obstacle", "files": ["tree-dead.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "dead bare gnarled tree with twisted black leafless branches, eerie haunted forest, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 96, "height": 96, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "tree-stump", "name": "Tree stump", "type": "obstacle", "files": ["tree-stump.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "old mossy tree stump with gnarled roots and cut-wood rings on top, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "goblin-warren",
+  "adventure": "adventures/goblin-warren.json",
+  "seed": "0xGOBLIN-2026-06-01-warren",
+  "model": "gemini-3.5-flash",
+  "stepBudget": { "player": 6, "dm": 12 },
+  "snapshotEveryTurns": 3,
+  "agents": {
+    "p1": { "characterId": "p1_warrior", "archetype": "warrior", "name": "Gareth", "persona": "personas/gareth-warrior.md" },
+    "p2": { "characterId": "p2_warlock",  "archetype": "warlock", "name": "Kael",  "persona": "personas/kael-warlock.md" },
+    "p3": { "characterId": "p3_healer", "archetype": "healer",  "name": "Fern", "persona": "personas/fern-healer.md" },
+    "dm": { "persona": "personas/dm-default.md" }
+  },
+  "human": { "characterId": "human_hunter", "archetype": "hunter", "name": "Bran", "persona": "personas/bran-hunter.md" }
+}

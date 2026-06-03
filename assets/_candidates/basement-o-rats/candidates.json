@@ -1,0 +1,35 @@
+{
+  "title": "Basement O' Rats — caves",
+  "style": "16-bit SNES (Chrono Trigger), dark underground · tiles-only migration",
+  "note": "Tilesets for the 4 cave scenes that were still single-PNG backgrounds (tavern-basement already has a tileset). rat-tunnel = dirt + blue fungus; underground-choices = grey stone; momentary-detour = glowing pool; rat-den = filthy floor + rat-hole walls. Plus cave props the scene intros call for.",
+  "items": [
+    {
+      "id": "rat-tunnel-tileset", "name": "rat-tunnel — dirt cave + blue fungus", "type": "tileset", "files": ["rat-tunnel-tileset.png"], "status": "pending", "note": "",
+      "regen": { "kind": "tileset", "lower": "hard-packed dirt cave tunnel floor, brown earth with small scattered pebbles, dim underground, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "rough dark cave rock wall edge with patches of glowing blue cave fungus, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "underground-choices-tileset", "name": "underground-choices — grey stone cave", "type": "tileset", "files": ["underground-choices-tileset.png"], "status": "pending", "note": "",
+      "regen": { "kind": "tileset", "lower": "rocky cave chamber floor, grey stone and loose gravel, dim underground, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "rough dark grey cave rock wall edge, jagged stone, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "momentary-detour-tileset", "name": "momentary-detour — glowing pool", "type": "tileset", "files": ["momentary-detour-tileset.png"], "status": "pending", "note": "",
+      "regen": { "kind": "tileset", "lower": "rocky cave floor with pebbles beside an underground pool, damp, dim, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "still glowing blue underground cave water pool, calm reflective surface with faint sparkles, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "transition": "wet rocky pool edge with damp dark stones", "transition_size": 0.25, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "rat-den-tileset", "name": "rat-den — filthy floor + rat-holes", "type": "tileset", "files": ["rat-den-tileset.png"], "status": "pending", "note": "",
+      "regen": { "kind": "tileset", "lower": "filthy rat den cave floor, dirty packed earth strewn with straw, droppings and gnawed bones, dim, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "upper": "rough dark cave rock wall edge riddled with small dark rat-holes, classic 16-bit SNES pixel art top-down, Chrono Trigger style", "transition": "", "transition_size": 0, "tile_size": 32, "view": "low top-down", "detail": "medium detail", "outline": "single color outline", "shading": "basic shading" }
+    },
+    {
+      "id": "glowing-blue-fungus", "name": "Glowing blue cave fungus", "type": "decoration", "files": ["glowing-blue-fungus.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "cluster of glowing blue cave fungus mushrooms, soft blue bioluminescent glow, dark, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "stalagmite", "name": "Stalagmite cluster", "type": "obstacle", "files": ["stalagmite.png"], "status": "pending", "note": "",
+      "regen": { "kind": "object", "description": "cluster of pointed grey limestone stalagmites rising from a cave floor, dim, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    },
+    {
+      "id": "rat-hole", "name": "Rat-hole (burrow)", "type": "obstacle", "files": ["rat-hole.png"], "status": "pending", "note": "fires once a generation slot frees",
+      "regen": { "kind": "object", "description": "dark round rat burrow hole in a cave floor with scattered loose dirt and straw, 16-bit SNES pixel art top-down, Chrono Trigger style", "width": 64, "height": 64, "view": "high top-down", "detail": "medium detail", "outline": "single color outline", "shading": "medium shading" }
+    }
+  ]
+}

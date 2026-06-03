@@ -1,0 +1,34 @@
+{
+  "seed": "fixture-attack-1",
+  "characters": [
+    {
+      "id": "h1",
+      "name": "Bran",
+      "kind": "hero",
+      "archetype": "warrior",
+      "pools": { "melee": 1, "ranged": 0, "magic": 0, "armor": 1 },
+      "healthTotal": 3,
+      "pos": { "x": 0, "y": 0 },
+      "normalAttack": { "kind": "melee", "name": "Slash", "range": 1, "damageMod": 0 },
+      "specialAction": { "id": "whirlwind-attack", "name": "WW", "description": "" },
+      "bonusAbility": { "id": "teamwork", "name": "TW", "description": "" }
+    },
+    {
+      "id": "m1",
+      "name": "Rat",
+      "kind": "monster",
+      "pools": { "melee": 1, "ranged": 0, "magic": 0, "armor": 1 },
+      "healthTotal": 2,
+      "pos": { "x": 1, "y": 0 },
+      "normalAttack": { "kind": "melee", "name": "Bite", "range": 1, "damageMod": 0 },
+      "specialAction": { "id": "pack-attack", "name": "PA", "description": "" },
+      "bonusAbility": { "id": "coward", "name": "CW", "description": "" }
+    }
+  ],
+  "narrativeActor": "h1",
+  "actions": [
+    { "actorId": "h1", "action": { "kind": "say", "text": "Take this!" } },
+    { "actorId": "h1", "action": { "kind": "normal_attack", "targetId": "m1" } },
+    { "actorId": "h1", "action": { "kind": "end_turn" } }
+  ]
+}

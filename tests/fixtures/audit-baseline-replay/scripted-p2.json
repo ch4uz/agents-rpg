@@ -1,0 +1,4 @@
+[
+  { "match": { "tag": "p2" }, "response": { "toolUses": [{ "name": "normal_attack", "input": { "targetId": "giant-rat-1" } }] } },
+  { "match": { "tag": "p2" }, "response": { "toolUses": [{ "name": "end_turn", "input": {} }] } }
+]

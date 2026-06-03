@@ -1,0 +1,24 @@
+[
+  {
+    "id": "mira",
+    "name": "Mira",
+    "pools": { "melee": 0, "ranged": 0, "magic": 0, "armor": 1 },
+    "dex": 1,
+    "healthTotal": 2,
+    "normalAttack": { "kind": "melee", "name": "Shove", "range": 1, "damageMod": 0 },
+    "specialAction": { "effectId": "noop", "name": "—", "description": "Non-combatant" },
+    "bonusAbility":  { "effectId": "noop", "name": "—", "description": "Non-combatant" },
+    "sprite": "mira"
+  },
+  {
+    "id": "lyra",
+    "name": "Lyra",
+    "pools": { "melee": 0, "ranged": 0, "magic": 0, "armor": 1 },
+    "dex": 1,
+    "healthTotal": 2,
+    "normalAttack": { "kind": "melee", "name": "Shove", "range": 1, "damageMod": 0 },
+    "specialAction": { "effectId": "noop", "name": "—", "description": "Asleep" },
+    "bonusAbility":  { "effectId": "noop", "name": "—", "description": "Asleep" },
+    "sprite": "lyra"
+  }
+]

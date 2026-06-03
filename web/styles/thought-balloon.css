@@ -1,0 +1,138 @@
+/* ============================================================
+   Thought balloon — pixel-art cloud over a thinking hero's head.
+   Collapsed: the hand-drawn pixel cloud sprite (assets/ui/
+   thought-cloud.svg — bumpy top, baked outline/shine/shade) with
+   three pulsing pixel dots, plus two pixel trail blobs toward the
+   head (assets/ui/thought-trail.svg — comic "thinking" mark).
+   Hover: expands into a 9-sliced pixel frame (assets/ui/
+   thought-frame.svg) revealing the live streamed thought text.
+   Shared by the game shell (Board overlay) and /thought-test.html.
+   ============================================================ */
+
+.thought-balloon {
+  position: absolute;
+  /* Anchored by its BOTTOM-LEFT corner, just above the hero's head: a FIXED
+     pixel X offset (not a % of width — that slid the left edge outward as the
+     cloud expanded) + -100% Y (bottom edge pinned regardless of height). So
+     the thought-trail blobs at the bottom-left stay rooted at the head while
+     the hover expansion grows up-and-rightward around them. */
+  transform: translate(-9px, -100%);
+  pointer-events: auto;          /* the overlay layer itself is pointer-events:none */
+  z-index: 40;
+  /* Entry fade (chunky 3-step — pixel art doesn't glide) into the gentle
+     idle bob that makes the balloon read as "alive" while thinking. */
+  animation:
+    thought-fade 240ms steps(3, jump-none) both,
+    thought-bob 2.4s steps(2, jump-none) 240ms infinite;
+}
+@keyframes thought-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes thought-bob {
+  0%, 100% { margin-top: 0; }
+  50%      { margin-top: -2px; }
+}
+/* Leaving (dispose → thinking ended): the same fade, reversed. Replacing the
+   `animation` value drops the bob (it's on its way out) and pointer-events
+   off so a hover can't pause the exit. Removal is timed by the component
+   (THOUGHT_BALLOON_FADE_MS in ThoughtBalloon.ts — keep in sync). */
+.thought-balloon--fading {
+  animation: thought-fade 240ms steps(3, jump-none) reverse both;
+  pointer-events: none;
+}
+
+/* --- Cloud body (collapsed): the pixel sprite, 24x14 grid at 2x ------ */
+.thought-cloud {
+  position: relative;
+  box-sizing: border-box;
+  width: 48px;
+  height: 28px;
+  background: url('/assets/ui/thought-cloud.svg') no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The bumps weight the sprite's top — nudge the dots toward the body. */
+  padding-top: 8px;
+  padding-left: 2px;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* --- Collapsed: three pulsing pixel dots ----------------------- */
+.thought-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.thought-dots i {
+  width: 4px;
+  height: 4px;
+  background: #2a2421;
+  /* square dots — pixel-art, not bouncing chat dots */
+  animation: thought-dot 1.05s steps(2, jump-none) infinite;
+}
+.thought-dots i:nth-child(2) { animation-delay: 0.35s; }
+.thought-dots i:nth-child(3) { animation-delay: 0.7s; }
+@keyframes thought-dot {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+/* --- Streamed text (hidden until expanded) --------------------- */
+.thought-text {
+  display: none;
+  font-family: 'Jersey 10', var(--font-body, monospace);
+  font-size: 17px;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  color: #2a2421;
+  font-style: italic;
+  padding: 0 4px 0 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 36, 33, 0.45) transparent;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- Expanded on hover: the SAME cloud, grown into a reading panel ----
+   A second hand-styled sprite (thought-cloud-large.svg, 120x66 grid at the
+   same 2x scale) with the same bumpy silhouette + palette as the collapsed
+   cloud, so the hover state reads as one cloud expanding — not a different
+   plaque. The panel size is FIXED at exactly 2x the grid (240x132), so the
+   sprite renders pixel-perfect with no 9-slice. Padding lives on the CLOUD
+   (not the text) so scrolled text can't ride over the bump valleys. */
+.thought-balloon:hover { animation-play-state: paused; z-index: 60; }
+.thought-balloon.thought-balloon--has-text:hover .thought-cloud {
+  width: 240px;
+  height: 132px;
+  background: url('/assets/ui/thought-cloud-large.svg') no-repeat center / 100% 100%;
+  padding: 14px 14px 14px 16px;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.thought-balloon.thought-balloon--has-text:hover .thought-dots { display: none; }
+.thought-balloon.thought-balloon--has-text:hover .thought-text { display: block; }
+
+/* --- Trailing thought blobs (toward the head) ----------------- */
+.thought-trail {
+  position: absolute;
+  background: url('/assets/ui/thought-trail.svg') no-repeat center / 100% 100%;
+  image-rendering: pixelated;
+}
+.thought-trail--big   { width: 12px; height: 12px; left: 5px;  bottom: -12px; }
+.thought-trail--small { width: 6px;  height: 6px;  left: -1px; bottom: -20px; }
+
+/* --- Right-edge flip: expand LEFTWARD instead -------------------
+   Near the board's right edge the 240px hover expansion would overflow, so
+   the Board adds `--flip`: the bottom-RIGHT corner is pinned instead
+   (translateX = -100% + 39px renders the 48px collapsed cloud at the exact
+   same spot as the normal anchor: -48+39 = -9px) and the trail blobs are
+   measured from the right edge so they too stay rooted at the head. */
+.thought-balloon--flip { transform: translate(calc(-100% + 39px), -100%); }
+.thought-balloon--flip .thought-trail--big   { left: auto; right: 31px; }
+.thought-balloon--flip .thought-trail--small { left: auto; right: 43px; }

@@ -1,0 +1,14 @@
+{
+  "id": "baseline",
+  "adventure": "adventures/stub-layer-b.json",
+  "seed": "0xC0FFEE-2026-05-08-baseline",
+  "model": "claude-sonnet-4-6",
+  "stepBudget": { "player": 6, "dm": 12 },
+  "snapshotEveryTurns": 3,
+  "agents": {
+    "p1": { "characterId": "p1_warrior", "archetype": "warrior", "name": "Gareth", "persona": "personas/cautious.md" },
+    "p2": { "characterId": "p2_warlock",  "archetype": "warlock", "name": "Kael",  "persona": "personas/reckless.md" },
+    "dm": { "persona": "personas/dm-default.md" }
+  },
+  "human": { "characterId": "human_hunter", "archetype": "hunter", "name": "Bran" }
+}

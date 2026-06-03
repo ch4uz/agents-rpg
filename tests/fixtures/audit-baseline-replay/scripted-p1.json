@@ -1,0 +1,6 @@
+[
+  { "match": { "tag": "p1" }, "response": { "toolUses": [{ "name": "normal_attack", "input": { "targetId": "giant-rat-1" } }] } },
+  { "match": { "tag": "p1" }, "response": { "toolUses": [{ "name": "move", "input": { "path": [{ "x": 0, "y": 0 }, { "x": 1, "y": 1 }, { "x": 2, "y": 2 }] } }] } },
+  { "match": { "tag": "p1" }, "response": { "toolUses": [{ "name": "normal_attack", "input": { "targetId": "giant-rat-2" } }] } },
+  { "match": { "tag": "p1" }, "response": { "toolUses": [{ "name": "end_turn", "input": {} }] } }
+]

@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>3D Dice — Standalone Test</title>
+  <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" />
+  <style>
+    :root {
+      --wood-dark:  #2a2118;
+      --wood-mid:   #5a4a35;
+      --wood-light: #8a7148;
+      --ink:        #f5e9c8;
+      --accent:     #f0b04c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--wood-dark);
+      color: var(--ink);
+      font-family: 'Jersey 10', system-ui, -apple-system, sans-serif;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 36px;
+      letter-spacing: 1px;
+      color: var(--accent);
+    }
+    header p {
+      margin: 0;
+      opacity: 0.7;
+      font-size: 18px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button {
+      background: var(--wood-mid);
+      color: var(--ink);
+      border: 2px solid var(--wood-light);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font: inherit;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.05s;
+      letter-spacing: 0.5px;
+    }
+    button:hover  { background: var(--wood-light); }
+    button:active { transform: translateY(1px); }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      max-width: 800px;
+      background: #1a140d;
+      border: 4px solid var(--wood-light);
+      border-radius: 4px;
+      box-shadow:
+        inset 0 0 0 2px var(--wood-dark),
+        0 6px 18px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    /* --- Combat header — Stamped Iron & Carved Oak -------------------
+       Speaks the same visual language as the in-game roll panel and the
+       canvas frame: wood-plank backgrounds, layered iron-rim/gold-band
+       ring stacks for every "stamped" surface (frame, avatar medallion,
+       die token), Jersey 10 display + all-small-caps system body, and a
+       KOF-style VS that mirrors the on-board HIT verdict.
+       ----------------------------------------------------------------- */
+    :root {
+      --iron-dark:  #1a120a;
+      --iron-deep:  #0d0805;
+      --wood-deep:  #2a1808;
+      --wood-mid:   #5c3b1c;
+      --wood-light: #8b5a2b;
+      --gold-band:  #c19a4a;
+      --gold-trim:  #8b6a3a;
+      --gold-glow:  #f0c270;
+      --bevel-hi:   rgba(193, 154, 74, 0.6);
+      --bevel-lo:   rgba(0, 0, 0, 0.65);
+      --enemy-glow: #d97a6a;
+      --dm-glow:    #c0b8a4;
+    }
+
+    .combat-header {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 16px;
+      z-index: 30;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease-out;
+    }
+    .combat-header[data-active="true"] { opacity: 1; }
+
+    /* --- Combat frame — stamped iron plaque ---------------------------
+       Burnished iron base with a subtle vertical highlight, finished with
+       very fine diagonal hatching for a polished/worn metal feel. The
+       outer ring stack (iron → gold → iron) is unchanged so the card
+       still announces itself as part of the same medallion family as the
+       avatar and die token inside.
+       The internal `.combat-frame-inner` element carries the textured
+       background so the outer frame can host the ring stack box-shadow
+       cleanly while a separate inner layer renders the inset bevel +
+       highlights without bleeding into the ring stack.
+       ----------------------------------------------------------------- */
+    .combat-frame {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px 7px;
+      min-width: 0;
+      isolation: isolate;
+      background:
+        /* Subtle warm halo where the avatar sits, for visual anchor */
+        radial-gradient(ellipse 60% 80% at 18% 50%,
+          rgba(193, 154, 74, 0.10) 0%,
+          transparent 70%),
+        /* Vertical burnish: brighter near the top edge, deep at the bottom */
+        linear-gradient(180deg,
+          #2a1c11 0%,
+          #1a110a 45%,
+          #0e0905 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(193, 154, 74, 0.35),     /* top highlight (gold rim) */
+        inset 0 -1px 0 rgba(0, 0, 0, 0.85),         /* bottom shadow */
+        inset 1px 0 0 rgba(193, 154, 74, 0.10),
+        inset -1px 0 0 rgba(0, 0, 0, 0.55),
+        0 0 0 1px var(--iron-dark),                 /* inner iron rim */
+        0 0 0 2px var(--gold-band),                 /* gold pinstripe */
+        0 0 0 3px var(--iron-dark),                 /* outer iron rim */
+        0 4px 10px rgba(0, 0, 0, 0.55);
+      /* Slight diagonal cut on outer corners for a "stamped" feel */
+      clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    }
+    /* Fine diagonal hatching overlay — gives the iron a worn, polished
+       feel without competing with the foreground. The pattern repeats
+       every 3px so at HUD scale it reads as subtle grain, not stripes. */
+    .combat-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(
+        135deg,
+        rgba(255, 230, 170, 0.04) 0,
+        rgba(255, 230, 170, 0.04) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      z-index: 0;
+    }
+    /* A pair of tiny gold "rivets" near each outer corner — anchors the
+       plaque to the surrounding HUD and matches the canvas-wrapper rivet
+       motif. Pure CSS: two box-shadows on a 1-px element. */
+    .combat-frame::after {
+      content: '';
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      top: 4px;
+      pointer-events: none;
+      border-radius: 0;
+      background: var(--gold-glow);
+      box-shadow:
+         0 0 0 1px var(--iron-deep),
+         0 calc(100% + 4px) 0 0 var(--gold-glow),
+         0 calc(100% + 4px) 0 1px var(--iron-deep) inset;
+      z-index: 0;
+    }
+    .combat-frame--left::after  { right: 6px; }
+    .combat-frame--right::after { left:  6px; }
+    /* All children layer above the texture pseudo-element. */
+    .combat-frame > * { position: relative; z-index: 1; }
+
+    .combat-frame--left  { flex-direction: row; }
+    .combat-frame--right {
+      flex-direction: row-reverse;
+      background:
+        radial-gradient(ellipse 60% 80% at 82% 50%,
+          rgba(193, 154, 74, 0.10) 0%,
+          transparent 70%),
+        linear-gradient(180deg,
+          #2a1c11 0%,
+          #1a110a 45%,
+          #0e0905 100%);
+      /* mirrored clip-path so the slanted corners flip side */
+      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+    }
+    .combat-header[data-active="true"] .combat-frame--left  { animation: combat-frame-in-left  340ms cubic-bezier(.34,1.4,.64,1) both; }
+    .combat-header[data-active="true"] .combat-frame--right { animation: combat-frame-in-right 340ms cubic-bezier(.34,1.4,.64,1) 80ms both; }
+
+    /* Loser frame — fades to grayscale + dims. filter propagates to all
+       children (avatar, name, dice pips, result number) automatically. */
+    .combat-frame[data-loser="true"] {
+      filter: grayscale(1) brightness(0.55);
+      transition: filter 0.8s ease-out;
+    }
+    .combat-frame:not([data-loser="true"]) {
+      filter: none;
+      transition: filter 0.8s ease-out;
+    }
+    @keyframes combat-frame-in-left {
+      0%   { opacity: 0; transform: translateX(-14px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes combat-frame-in-right {
+      0%   { opacity: 0; transform: translateX(14px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    /* --- Avatar medallion ---------------------------------------------
+       Square portrait with the same iron→gold→iron ring stack as the
+       in-game `.roll-avatar`, scaled up for HUD prominence. The sprite
+       sheet is 96×96 (a 3× crop of the 32px head) offset to center the
+       face inside the medallion. */
+    .combat-avatar {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      background-size: 96px 96px;
+      background-position: -32px -10px;
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+      background-color: var(--iron-dark);
+      box-shadow:
+        inset 0 0 0 1px rgba(193, 154, 74, 0.38),
+        0 0 0 1px var(--iron-dark),
+        0 0 0 2px var(--gold-band),
+        0 0 0 3px var(--iron-dark),
+        0 1px 3px rgba(0, 0, 0, 0.75);
+      flex-shrink: 0;
+      margin: 2px;
+    }
+    /* DM placeholder — no portrait, show a die motif on iron. */
+    .combat-avatar[data-empty="true"] {
+      background-image: none;
+      position: relative;
+    }
+    .combat-avatar[data-empty="true"]::after {
+      content: '◆';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-trim);
+      font-size: 18px;
+      text-shadow: 0 1px 0 var(--iron-deep);
+    }
+
+    /* --- Name + subtitle ---------------------------------------------- */
+    .combat-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .combat-frame--right .combat-meta { align-items: flex-end; text-align: right; }
+
+    .combat-name {
+      font-family: "Jersey 10", "Press Start 2P", monospace;
+      font-size: 22px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--gold-glow);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow:
+        1px 1px 0 var(--iron-deep),
+        2px 2px 0 var(--iron-deep);
+    }
+    .combat-name[data-kind="hero"]    { color: var(--gold-glow); }
+    .combat-name[data-kind="monster"] { color: var(--enemy-glow); }
+    .combat-name[data-kind="dm"]      { color: var(--dm-glow); }
+
+    .combat-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-variant-caps: all-small-caps;
+      letter-spacing: 0.18em;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--gold-trim);
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      /* a diamond pip in the middle of the subtitle reinforces the
+         "carved nameplate" feel without imposing a real icon */
+    }
+    .combat-subtitle::before {
+      content: '◆ ';
+      color: var(--gold-band);
+      font-size: 8px;
+      vertical-align: 1px;
+      letter-spacing: 0;
+      margin-right: 1px;
+    }
+    .combat-frame--right .combat-subtitle::before { display: none; }
+    .combat-frame--right .combat-subtitle::after  {
+      content: ' ◆';
+      color: var(--gold-band);
+      font-size: 8px;
+      vertical-align: 1px;
+      letter-spacing: 0;
+      margin-left: 1px;
+    }
+
+    /* --- Dice emblem --------------------------------------------------
+       A single isometric pixel-art d6 painted in the unit's skin color.
+
+       How the colorization works:
+       1. The CSS mask (`mask-image: var(--dice-img)`) uses the sprite's
+          own alpha to clip the element to the cube silhouette — the
+          surrounding card never sees a tinted square, only the cube.
+       2. Inside that mask, the element layers:
+          - `background-color: var(--dice-tint)` paints the skin color
+            across the cube area.
+          - `background-image: var(--dice-img)` paints the sprite (white
+            faces, gray shading, black pips) over it.
+          - `background-blend-mode: multiply` mixes them:
+              white face × tint = tint (bright lit face)
+              gray shade × tint = darker tint (preserves iso 3D shading)
+              black pip × tint = black (pips stay legible)
+
+       No ring stack — the iso cube has its own pixel-art outline, and a
+       ring would clash with the asymmetric silhouette. */
+    /* Wraps the per-lane rolled-faces row AND the post-roll result number.
+       Slot is invisible until the lane settles, then expands and reveals
+       the dice-faces row (slid toward the unit's nameplate) and the
+       stamped KOF result number (slid toward the VS divider).
+       Slot width scales with the number of dice the lane rolled; JS sets
+       `--lane-dice-count` so the CSS clamp matches the actual content. */
+    .dice-slot {
+      position: relative;
+      width: 0;
+      height: 44px;
+      flex-shrink: 0;
+      overflow: visible;
+      --lane-dice-count: 1;
+      transition: width 0.36s cubic-bezier(.34, 1.5, .64, 1);
+    }
+    /* Expanded slot width: room for faces row (up to 92px) + gap + number
+       (38px) — clamped so even 1-die rolls have a reasonable size. */
+    .dice-slot[data-result-active="true"] {
+      width: calc(min(92px, var(--lane-dice-count) * 28px + 10px) + 38px + 6px);
+    }
+
+    /* Face sprite — a window into the spritesheet, positioned to the
+       correct 64×64 cell by `--face-row` / `--face-col` CSS variables. The
+       unit's tint paints under it via `mix-blend-mode: multiply`, so a
+       cube face takes the skin color while pips stay black. */
+    /* Flex row of dice pips — one per die rolled by the lane. Each pip is
+       a per-face PNG painted with `mix-blend-mode: multiply` over the
+       unit's tint. Pip size shrinks proportionally so the row fits inside
+       the slot's allocated face area (~92px max). */
+    .dice-faces {
+      position: absolute;
+      top: 50%;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      max-width: 92px;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      transition:
+        left      0.36s cubic-bezier(.34, 1.5, .64, 1),
+        right     0.36s cubic-bezier(.34, 1.5, .64, 1),
+        transform 0.36s cubic-bezier(.34, 1.5, .64, 1),
+        opacity   0.22s ease-out 0.08s;
+    }
+    /* Left frame: faces row slides LEFT (toward unit name) when result
+       stamps in on its RIGHT. */
+    .combat-frame--left  .dice-slot[data-result-active="true"] .dice-faces {
+      left: 6px;
+      transform: translate(0, -50%) scale(1);
+      opacity: 1;
+    }
+    /* Right frame: faces row slides RIGHT (toward unit name). */
+    .combat-frame--right .dice-slot[data-result-active="true"] .dice-faces {
+      left: auto;
+      right: 6px;
+      transform: translate(0, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* Individual rolled die. Width/height are set by JS via the
+       `--pip-size` variable so the whole row scales to fit the available
+       horizontal space when the lane has many dice. */
+    .dice-pip {
+      width: var(--pip-size, 28px);
+      height: var(--pip-size, 28px);
+      flex-shrink: 0;
+      background-image: var(--face-img, none);
+      background-color: var(--dice-tint, #fff);
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-blend-mode: multiply;
+      -webkit-mask-image: var(--face-img, none);
+              mask-image: var(--face-img, none);
+      -webkit-mask-size: contain;
+              mask-size: contain;
+      -webkit-mask-position: center;
+              mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
+      image-rendering: pixelated;
+      filter:
+        drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65))
+        brightness(0.85)
+        saturate(0.92);
+    }
+
+    /* Result wrapper — slides from invisible into place on the VS-facing
+       edge of the slot. Inner `.combat-result` handles the stamp anim. */
+    .combat-result-wrap {
+      position: absolute;
+      top: 50%;
+      width: 38px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(-50%);
+      pointer-events: none;
+      opacity: 0;
+      transition:
+        left      0.36s cubic-bezier(.34, 1.5, .64, 1),
+        right     0.36s cubic-bezier(.34, 1.5, .64, 1),
+        opacity   0.22s ease-out;
+    }
+    .combat-frame--left  .combat-result-wrap { right: -38px; }
+    .combat-frame--right .combat-result-wrap { left:  -38px; }
+    .combat-frame--left  .dice-slot[data-result-active="true"] .combat-result-wrap {
+      right: 0;
+      opacity: 1;
+    }
+    .combat-frame--right .dice-slot[data-result-active="true"] .combat-result-wrap {
+      left: 0;
+      opacity: 1;
+    }
+
+    /* --- Result number — KOF/HIT styling --------------------------------
+       Same stamped-italic gold-gradient treatment as the VS divider and
+       the on-board HIT verdict. Stamps in via a scale-overshoot animation
+       when the lane's dice settle. */
+    .combat-result {
+      font-family: "Jersey 10", "Press Start 2P", monospace;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 32px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      transform: skewX(-10deg);
+      background: linear-gradient(
+        180deg,
+        #fff6a3 0%,
+        #ffe23a 32%,
+        #ff7a14 70%,
+        #c61f12 100%
+      );
+      -webkit-background-clip: text;
+              background-clip: text;
+      color: transparent;
+      filter:
+        drop-shadow( 1.5px  0    0 #000)
+        drop-shadow(-1.5px  0    0 #000)
+        drop-shadow( 0    1.5px  0 #000)
+        drop-shadow( 0   -1.5px  0 #000)
+        drop-shadow( 0    2.5px  3px rgba(0, 0, 0, 0.95));
+      opacity: 0;
+    }
+    .combat-result[data-active="true"] {
+      animation: result-stamp 380ms cubic-bezier(.34, 1.6, .64, 1) both;
+    }
+    @keyframes result-stamp {
+      0%   { opacity: 0; transform: skewX(-10deg) scale(2.4); }
+      55%  { opacity: 1; transform: skewX(-10deg) scale(0.82); }
+      80%  { opacity: 1; transform: skewX(-10deg) scale(1.08); }
+      100% { opacity: 1; transform: skewX(-10deg) scale(1); }
+    }
+
+
+    /* --- Initiative list overlay --------------------------------------
+       Replaces the VS header for initiative rolls. Full-width, top-
+       anchored, vertically scrollable if many combatants. Cards slide
+       in sequentially by rank (highest first). */
+    .initiative-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 32;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease-out;
+      overflow-y: auto;
+      gap: 0;
+    }
+    .initiative-overlay[data-active="true"] { opacity: 1; }
+
+    .initiative-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    /* Initiative card — same iron-plaque treatment as .combat-frame but
+       horizontal with no directional clip-path. */
+    .initiative-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 10px 6px;
+      width: 100%;
+      isolation: isolate;
+      background:
+        radial-gradient(ellipse 40% 80% at 6% 50%,
+          rgba(193, 154, 74, 0.10) 0%, transparent 70%),
+        linear-gradient(180deg, #2a1c11 0%, #1a110a 45%, #0e0905 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(193, 154, 74, 0.35),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.85),
+        0 0 0 1px var(--iron-dark),
+        0 0 0 2px var(--gold-band),
+        0 0 0 3px var(--iron-dark),
+        0 3px 8px rgba(0, 0, 0, 0.5);
+      clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+    .initiative-card[data-rank="1"] { clip-path: none; border-top: 1px solid var(--gold-glow); }
+    .initiative-card.show {
+      animation: initiative-card-in 320ms cubic-bezier(.34, 1.4, .64, 1) forwards;
+    }
+    @keyframes initiative-card-in {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Rank badge — shows the position number to the left of the avatar. */
+    .initiative-rank {
+      font-family: "Jersey 10", monospace;
+      font-size: 18px;
+      font-style: italic;
+      color: var(--gold-trim);
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+      text-shadow: 0 1px 0 var(--iron-deep);
+    }
+    .initiative-card[data-rank="1"] .initiative-rank { color: var(--gold-glow); font-size: 22px; }
+
+    .initiative-avatar {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background-size: 84px 84px;
+      background-position: -28px -10px;
+      background-repeat: no-repeat;
+      background-color: var(--iron-dark);
+      image-rendering: pixelated;
+      box-shadow:
+        inset 0 0 0 1px rgba(193, 154, 74, 0.38),
+        0 0 0 1px var(--iron-dark),
+        0 0 0 2px var(--gold-band),
+        0 0 0 3px var(--iron-dark);
+      flex-shrink: 0;
+    }
+
+    .initiative-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .initiative-name {
+      font-family: "Jersey 10", monospace;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--gold-glow);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 1px 1px 0 var(--iron-deep);
+    }
+    .initiative-name[data-kind="monster"] { color: var(--enemy-glow); }
+    .initiative-sub {
+      font-family: -apple-system, sans-serif;
+      font-variant-caps: all-small-caps;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--gold-trim);
+    }
+
+    /* Dice pips row inside initiative card */
+    .initiative-dice {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .initiative-pip {
+      width: 20px;
+      height: 20px;
+      background-image: var(--face-img, none);
+      background-color: var(--dice-tint, #fff);
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-blend-mode: multiply;
+      -webkit-mask-image: var(--face-img, none);
+              mask-image: var(--face-img, none);
+      -webkit-mask-size: contain;
+              mask-size: contain;
+      -webkit-mask-position: center;
+              mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
+      image-rendering: pixelated;
+      filter: brightness(0.85) saturate(0.92);
+    }
+
+    /* Result value stamped at the right edge */
+    .initiative-value {
+      font-family: "Jersey 10", monospace;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 26px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      min-width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+      color: var(--gold-glow);
+      text-shadow:
+        1px  1px 0 var(--iron-deep),
+        -1px -1px 0 var(--iron-deep);
+      filter:
+        drop-shadow(1px  0   0 #000)
+        drop-shadow(-1px 0   0 #000)
+        drop-shadow(0  1px   0 #000)
+        drop-shadow(0 -1px   0 #000);
+    }
+
+    /* --- Combat verdict — SUCCESS / FAIL ------------------------------
+       Absolute overlay below the entire combat-header row. The header
+       sits at top:14px and is ~52px tall (6px padding + 44px content +
+       ~6px padding ≈ 56px), so top:76px clears it with a small gap. */
+    .combat-verdict {
+      position: absolute;
+      top: 76px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 28;
+      pointer-events: none;
+      opacity: 0;
+    }
+    /* SUCCESS — clean stamp in, brief settle, then a gentle breathe. */
+    .combat-verdict[data-active="true"][data-outcome="success"] {
+      animation:
+        verdict-success-stamp  420ms cubic-bezier(.34, 1.4, .64, 1) both,
+        verdict-success-float 3000ms ease-in-out 420ms infinite;
+    }
+    @keyframes verdict-success-stamp {
+      0%   { opacity: 0; transform: scale(2.0) skewX(-10deg); }
+      55%  { opacity: 1; transform: scale(0.90) skewX(-10deg); }
+      80%  { opacity: 1; transform: scale(1.04) skewX(-10deg); }
+      100% { opacity: 1; transform: scale(1.00) skewX(-10deg); }
+    }
+    @keyframes verdict-success-float {
+      0%, 100% { transform: scale(1.0) skewX(-10deg) translateY(0);    }
+      50%      { transform: scale(1.0) skewX(-10deg) translateY(-2px); }
+    }
+
+    /* FAIL — stamp in, single short shake, then stays put. */
+    .combat-verdict[data-active="true"][data-outcome="fail"] {
+      animation:
+        verdict-fail-stamp 400ms cubic-bezier(.34, 1.2, .64, 1) both,
+        verdict-fail-shake 280ms ease-in-out 360ms 1;
+    }
+    @keyframes verdict-fail-stamp {
+      0%   { opacity: 0; transform: scale(2.0) skewX(-10deg); }
+      55%  { opacity: 1; transform: scale(0.90) skewX(-10deg); }
+      80%  { opacity: 1; transform: scale(1.04) skewX(-10deg); }
+      100% { opacity: 1; transform: scale(1.00) skewX(-10deg); }
+    }
+    @keyframes verdict-fail-shake {
+      0%   { transform: scale(1.0) skewX(-10deg) translateX(0); }
+      25%  { transform: scale(1.0) skewX(-10deg) translateX(-5px); }
+      75%  { transform: scale(1.0) skewX(-10deg) translateX(4px); }
+      100% { transform: scale(1.0) skewX(-10deg) translateX(0); }
+    }
+
+    .combat-verdict-text {
+      font-family: "Jersey 10", "Press Start 2P", monospace;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 44px;
+      letter-spacing: 0.18em;
+      line-height: 1;
+      transform: skewX(-10deg);
+    }
+    .combat-verdict[data-outcome="success"] .combat-verdict-text {
+      /* Gradient repeated twice end-to-end so background-position can
+         scroll from 0% to 100% without a visible seam — the colours
+         wrap back to the start naturally. */
+      background: linear-gradient(
+        135deg,
+        #fff6a3, #ffe23a, #ff7a14, #c61f12,
+        #ff7a14, #ffe23a, #fff6a3
+      );
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+              background-clip: text;
+      color: transparent;
+      animation: gradient-success 2.4s linear infinite;
+      filter:
+        drop-shadow( 1.5px  0     0 #000)
+        drop-shadow(-1.5px  0     0 #000)
+        drop-shadow( 0     1.5px  0 #000)
+        drop-shadow( 0    -1.5px  0 #000)
+        drop-shadow( 0     2px   2px rgba(0, 0, 0, 0.9));
+    }
+    @keyframes gradient-success {
+      0%   { background-position: 0%   0%;   }
+      100% { background-position: 100% 100%; }
+    }
+
+    .combat-verdict[data-outcome="fail"] .combat-verdict-text {
+      font-size: 36px;
+      font-weight: 700;
+      /* Steel shimmer: dark → light → mid → dark cycling left-to-right. */
+      background: linear-gradient(
+        135deg,
+        #4a5260, #b8c0c8, #8090a0, #c8d0d8,
+        #8090a0, #b8c0c8, #4a5260
+      );
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+              background-clip: text;
+      color: transparent;
+      animation: gradient-fail 3.6s linear infinite;
+      filter:
+        drop-shadow( 1px    0    0 #000)
+        drop-shadow(-1px    0    0 #000)
+        drop-shadow( 0     1px   0 #000)
+        drop-shadow( 0    -1px   0 #000)
+        drop-shadow( 0     1.5px 1.5px rgba(0, 0, 0, 0.85));
+    }
+    @keyframes gradient-fail {
+      0%   { background-position: 0%   0%;   }
+      100% { background-position: 100% 100%; }
+    }
+
+    /* --- VS divider --------------------------------------------------
+       KOF/HIT-style stamped glyph — vertical yellow→red gradient via
+       background-clip: text, italic skew, multi-directional black halo
+       via chained drop-shadow (NOT text-shadow, which would paint over
+       the gradient and turn it solid). Sits taller than the frames so
+       it's the dominant focal point. Floats softly to feel alive. */
+    .vs-divider {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Jersey 10", "Press Start 2P", monospace;
+      font-style: italic;
+      font-weight: 900;
+      font-size: 44px;
+      letter-spacing: 0.12em;
+      line-height: 1;
+      transform: skewX(-10deg);
+      padding: 0 4px;
+      background: linear-gradient(
+        180deg,
+        #fff6a3 0%,
+        #ffe23a 32%,
+        #ff7a14 70%,
+        #c61f12 100%
+      );
+      -webkit-background-clip: text;
+              background-clip: text;
+      color: transparent;
+      filter:
+        drop-shadow( 2px    0    0 #000)
+        drop-shadow(-2px    0    0 #000)
+        drop-shadow( 0     2px   0 #000)
+        drop-shadow( 0    -2px   0 #000)
+        drop-shadow( 0     3px   4px rgba(0, 0, 0, 0.95));
+      animation: vs-float 2200ms ease-in-out infinite;
+    }
+    .combat-header[data-active="true"] .vs-divider {
+      animation:
+        vs-stamp 320ms cubic-bezier(.34,1.6,.64,1) 40ms both,
+        vs-float 2200ms ease-in-out 360ms infinite;
+    }
+    @keyframes vs-stamp {
+      0%   { opacity: 0; transform: skewX(-10deg) scale(2.2);   filter: drop-shadow(0 0 0 #000) drop-shadow(0 0 24px rgba(255, 220, 100, 0.9)); }
+      55%  { opacity: 1; transform: skewX(-10deg) scale(0.86); }
+      80%  { opacity: 1; transform: skewX(-10deg) scale(1.06); }
+      100% { opacity: 1; transform: skewX(-10deg) scale(1); }
+    }
+    @keyframes vs-float {
+      0%, 100% { transform: skewX(-10deg) translateY(0); }
+      50%      { transform: skewX(-10deg) translateY(-2px); }
+    }
+    .camera-controls {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--wood-mid);
+      border-radius: 4px;
+      padding: 14px 16px;
+    }
+    .camera-controls h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    .camera-controls .group {
+      margin-bottom: 10px;
+    }
+    .camera-controls .group-label {
+      font-size: 14px;
+      color: var(--accent);
+      opacity: 0.85;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+    .camera-controls .row {
+      display: grid;
+      grid-template-columns: 24px 1fr 70px;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .camera-controls .row .axis {
+      font-size: 16px;
+      opacity: 0.75;
+    }
+    .camera-controls input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .camera-controls input[type="number"] {
+      background: var(--wood-dark);
+      color: var(--ink);
+      border: 1px solid var(--wood-mid);
+      border-radius: 4px;
+      padding: 4px 6px;
+      font: inherit;
+      font-size: 14px;
+      width: 100%;
+      text-align: right;
+    }
+    .camera-controls .snippet {
+      background: #0d0a06;
+      border: 1px solid var(--wood-mid);
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+      font-size: 13px;
+      color: #d6c79f;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 12px 0 8px;
+    }
+    .camera-controls .snippet-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .camera-controls .snippet-actions button {
+      font-size: 15px;
+      padding: 6px 14px;
+    }
+    .camera-controls .copy-toast {
+      font-size: 14px;
+      color: #b6e3a0;
+      opacity: 0;
+      align-self: center;
+      transition: opacity 0.15s;
+    }
+    .camera-controls .copy-toast.show { opacity: 1; }
+    .canvas-wrapper::before {
+      /* Corner rivets — quick stand-in for the real board frame so the
+         test mirrors how the dice canvas reads in production. */
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px dashed rgba(240, 176, 76, 0.25);
+      pointer-events: none;
+      z-index: 4;
+    }
+    #status {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--wood-mid);
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+      font-size: 14px;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+    #status .label { color: var(--accent); }
+    #status .face  { color: #b6e3a0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>3D Dice — Standalone Test</h1>
+      <p>Mounts <code>Dice3DOverlay</code> in isolation. Click a button to spawn dice in the tray.</p>
+    </header>
+
+    <div class="controls" id="controls">
+      <button data-action="1">1 die</button>
+      <button data-action="2">2 dice</button>
+      <button data-action="3">3 dice</button>
+      <button data-action="4">4 dice</button>
+      <button data-action="duel">Duel 3 vs 2</button>
+      <button data-action="duel-big">Duel 5 vs 3</button>
+      <button data-action="initiative">Initiative (8)</button>
+      <button data-action="max">Max (12)</button>
+    </div>
+
+    <div class="controls" id="calibration-controls" style="margin-top: -8px;">
+      <span style="color: var(--accent); font-size: 14px; align-self: center; margin-right: 6px;">Calibration:</span>
+      <button data-calibrate="1">Show face 1</button>
+      <button data-calibrate="2">Show face 2</button>
+      <button data-calibrate="3">Show face 3</button>
+      <button data-calibrate="4">Show face 4</button>
+      <button data-calibrate="5">Show face 5</button>
+      <button data-calibrate="6">Show face 6</button>
+    </div>
+
+    <div class="canvas-wrapper" id="dice-host">
+      <div class="initiative-overlay" id="initiative-overlay">
+        <div class="initiative-list" id="initiative-list"></div>
+      </div>
+      <div class="combat-verdict" id="combat-verdict">
+        <span class="combat-verdict-text"></span>
+      </div>
+      <div class="combat-header" id="combat-header" data-active="false">
+        <div class="combat-frame combat-frame--left" id="combat-left">
+          <span class="combat-avatar"></span>
+          <div class="combat-meta">
+            <span class="combat-name"></span>
+            <span class="combat-subtitle"></span>
+          </div>
+          <div class="dice-slot" data-result-active="false">
+            <div class="dice-faces"></div>
+            <div class="combat-result-wrap">
+              <span class="combat-result" data-active="false"></span>
+            </div>
+          </div>
+        </div>
+        <span class="vs-divider">VS</span>
+        <div class="combat-frame combat-frame--right" id="combat-right">
+          <span class="combat-avatar"></span>
+          <div class="combat-meta">
+            <span class="combat-name"></span>
+            <span class="combat-subtitle"></span>
+          </div>
+          <div class="dice-slot" data-result-active="false">
+            <div class="dice-faces"></div>
+            <div class="combat-result-wrap">
+              <span class="combat-result" data-active="false"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <pre id="status">Loading dice engine…</pre>
+
+    <aside class="camera-controls" id="camera-controls">
+      <h2>Camera</h2>
+
+      <div class="group">
+        <div class="group-label">Position</div>
+        <div class="row"><span class="axis">X</span><input type="range" data-ctrl="pos.x" min="-30" max="30" step="0.1"><input type="number" data-ctrl="pos.x" step="0.1"></div>
+        <div class="row"><span class="axis">Y</span><input type="range" data-ctrl="pos.y" min="-30" max="30" step="0.1"><input type="number" data-ctrl="pos.y" step="0.1"></div>
+        <div class="row"><span class="axis">Z</span><input type="range" data-ctrl="pos.z" min="-30" max="30" step="0.1"><input type="number" data-ctrl="pos.z" step="0.1"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Target (look-at point — controls rotation)</div>
+        <div class="row"><span class="axis">X</span><input type="range" data-ctrl="tgt.x" min="-10" max="10" step="0.1"><input type="number" data-ctrl="tgt.x" step="0.1"></div>
+        <div class="row"><span class="axis">Y</span><input type="range" data-ctrl="tgt.y" min="-10" max="10" step="0.1"><input type="number" data-ctrl="tgt.y" step="0.1"></div>
+        <div class="row"><span class="axis">Z</span><input type="range" data-ctrl="tgt.z" min="-10" max="10" step="0.1"><input type="number" data-ctrl="tgt.z" step="0.1"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Zoom (orthographic half-height)</div>
+        <div class="row"><span class="axis">·</span><input type="range" data-ctrl="zoom" min="2" max="30" step="0.1"><input type="number" data-ctrl="zoom" step="0.1"></div>
+      </div>
+
+      <pre class="snippet" id="config-snippet">// ready…</pre>
+      <div class="snippet-actions">
+        <button id="copy-btn">Copy to clipboard</button>
+        <button id="reset-btn">Reset to defaults</button>
+        <span class="copy-toast" id="copy-toast">Copied!</span>
+      </div>
+    </aside>
+
+    <aside class="camera-controls" id="vignette-controls">
+      <h2>Vignette (dithered fade-to-black)</h2>
+
+      <div class="group">
+        <div class="group-label">Radius (half-size of bright rect — 0 = centre, 1 = frame edge)</div>
+        <div class="row"><span class="axis">·</span><input type="range" data-vig="radius" min="0" max="1" step="0.01"><input type="number" data-vig="radius" step="0.01"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Softness (width of the fade band)</div>
+        <div class="row"><span class="axis">·</span><input type="range" data-vig="softness" min="0" max="1" step="0.01"><input type="number" data-vig="softness" step="0.01"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Intensity (ink coverage at the corners — 1 = solid black)</div>
+        <div class="row"><span class="axis">·</span><input type="range" data-vig="intensity" min="0" max="1" step="0.01"><input type="number" data-vig="intensity" step="0.01"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Dither cell (RT px per Bayer dot — higher = coarser dots)</div>
+        <div class="row"><span class="axis">·</span><input type="range" data-vig="ditherPx" min="1" max="8" step="1"><input type="number" data-vig="ditherPx" step="1"></div>
+      </div>
+
+      <pre class="snippet" id="vig-snippet">// ready…</pre>
+      <div class="snippet-actions">
+        <button id="vig-copy-btn">Copy to clipboard</button>
+        <button id="vig-reset-btn">Reset to defaults</button>
+        <span class="copy-toast" id="vig-copy-toast">Copied!</span>
+      </div>
+    </aside>
+  </main>
+  <script type="module" src="./dice-test.ts"></script>
+</body>
+</html>

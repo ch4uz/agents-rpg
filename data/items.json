@@ -1,0 +1,56 @@
+[
+  {
+    "id": "potion",
+    "name": "Healing Potion",
+    "category": "consumable",
+    "consumableEffect": "heal-full",
+    "icon": "potion"
+  },
+  {
+    "id": "bomb",
+    "name": "Bomb",
+    "category": "consumable",
+    "consumableEffect": "bomb-blast",
+    "icon": "bomb"
+  },
+  {
+    "id": "rope",
+    "name": "Rope",
+    "category": "utility",
+    "skillBonus": ["athletics", "acrobatics"],
+    "icon": "rope"
+  },
+  {
+    "id": "food",
+    "name": "Food",
+    "category": "utility",
+    "skillBonus": ["persuasion"],
+    "icon": "food"
+  },
+  {
+    "id": "gold",
+    "name": "Gold",
+    "category": "utility",
+    "skillBonus": ["persuasion"],
+    "icon": "gold"
+  },
+  {
+    "id": "herbs",
+    "name": "Herbs",
+    "category": "utility",
+    "skillBonus": ["knowledge"],
+    "icon": "herbs"
+  },
+  {
+    "id": "cheese",
+    "name": "Cheese",
+    "category": "throwable",
+    "icon": "cheese"
+  },
+  {
+    "id": "shiny-coin",
+    "name": "Shiny Coin",
+    "category": "throwable",
+    "icon": "gold"
+  }
+]

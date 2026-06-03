@@ -1,0 +1,141 @@
+{
+  "id": "basement-o-rats",
+  "title": "Basement O' Rats",
+  "estimatedDurationMin": 30,
+  "scenes": [
+    {
+      "id": "tavern-basement",
+      "intro": "You're at supper at a tavern when Maeve the innkeeper bursts up from the cellar, white as a sheet: \"Giant rats, a whole nest of them down there — and Elara, the healer's apprentice, went down to clear them out and hasn't come back!\" Everyone looks to you. Your first real adventure: get down there, beat the rats, and bring Elara home.\n\nDown the ladder, the cellar reeks of sour cabbage and wet fur. Barrels clutter the floor — and a few, marked with a skull-and-crossbones and trailing a fuse, are lamp-oil casks that burst at a spark. Then the skittering starts, and the rats turn from the shadows to face you.",
+      "opening": {
+        "before": "Three young heroes — Gareth, Kael, and Bran — are eating dinner at the tavern when the innkeeper runs up from the basement: \"Giant rats, a whole nest of them down there — and Elara, the healer's helper, went down to fight them and never came back!\" Their first real adventure begins.",
+        "after": "Down the ladder, the cellar reeks of sour cabbage and wet fur. Barrels clutter the floor — and a few, marked with a skull-and-crossbones and trailing a fuse, are lamp-oil casks that burst at a spark. Then the skittering starts, and the rats turn from the shadows to face you.",
+        "cast": [
+          { "name": "Gareth", "names": { "pt": "Heitor" }, "portrait": "heroes/warrior/south.png" },
+          { "name": "Kael", "names": { "pt": "Caio" }, "portrait": "heroes/warlock/south.png" },
+          { "name": "Bran", "names": { "pt": "Breno" }, "portrait": "heroes/hunter/south.png" },
+          { "name": "Elara", "names": { "pt": "Iara" }, "portrait": "heroes/healer/south.png" },
+          { "name": "Maeve" }
+        ]
+      },
+      "map": {
+        "width": 13,
+        "height": 9,
+        "background": "tavern-basement",
+        "walls": false,
+        "entry": [
+          { "x": 1, "y": 1 }, { "x": 1, "y": 2 }, { "x": 2, "y": 1 }
+        ],
+        "obstacles": [
+          { "type": "barrel-stack", "x": 6, "y": 0 },
+          { "type": "barrel-stack", "x": 6, "y": 1 },
+          { "type": "barrel-stack", "x": 6, "y": 2 },
+          { "type": "oil-cask",     "x": 6, "y": 4, "durability": 1, "explosive": { "damage": 1, "radius": 1 } },
+          { "type": "barrel-stack", "x": 6, "y": 6 },
+          { "type": "barrel-stack", "x": 6, "y": 7 },
+          { "type": "barrel-stack", "x": 6, "y": 8 },
+          { "type": "barrel-stack", "x": 7, "y": 0 },
+          { "type": "barrel-stack", "x": 7, "y": 1 },
+          { "type": "barrel-stack", "x": 7, "y": 2 },
+          { "type": "barrel-stack", "x": 7, "y": 6 },
+          { "type": "barrel-stack", "x": 7, "y": 7 },
+          { "type": "barrel-stack", "x": 7, "y": 8 },
+          { "type": "barrel-stack", "x": 4, "y": 2, "cover": true },
+          { "type": "barrel-stack", "x": 3, "y": 4, "cover": true },
+          { "type": "barrel-stack", "x": 4, "y": 7, "cover": true },
+          { "type": "barrel-stack", "x": 8, "y": 3, "cover": true },
+          { "type": "barrel-stack", "x": 8, "y": 6, "cover": true },
+          { "type": "oil-cask",     "x": 9, "y": 2, "durability": 1, "explosive": { "damage": 1, "radius": 1 }, "cover": true }
+        ],
+        "decorations": [],
+        "exits": [
+          { "to": "rat-tunnel", "at": { "x": 0, "y": 8 }, "trigger": "step-on" }
+        ]
+      },
+      "monsters": [
+        { "type": "giant-rat", "startPos": { "x": 10, "y": 2 } },
+        { "type": "giant-rat", "startPos": { "x": 11, "y": 4 } },
+        { "type": "giant-rat", "startPos": { "x": 10, "y": 5 } },
+        { "type": "giant-rat", "startPos": { "x": 9,  "y": 7 } }
+      ],
+      "tactics": "Heroes climb down at the north-west corner (around x=1-2, y=1-2); four giant rats are spread across the east half (x=9-11). A tall barricade of barrels runs down the middle of the cellar (x=6, y=2-6), splitting the room into a NORTH lane (y=0-1) and a SOUTH lane (y=7-8), with more barrels clustered as scattered cover (around (3,4) and (4,2) on the heroes' side, (4,7) in the south lane, and (8,3)/(8,6) on the rats' side). The barrels fully block movement AND line-of-sight, so a ranged or magic shot fired through them takes a cover penalty — pick clean lanes and use a barrel to break an enemy's line on you. The rats charge the closest hero and gang up: if two rats end adjacent to ONE hero, their Pack Attack bite gains a die — so don't let a single hero get surrounded with no support. The heroes' counter is the same rule in reverse — two heroes adjacent to one rat 'engage' it, and the warrior's Teamwork makes him strike harder. Push through one lane together, focus one rat at a time, and keep the party within supporting distance of each other. THE OIL CASKS are the set-piece play — three lamp-oil casks, each marked with a skull-and-crossbones and a stub of fuse, sit on the grid: (6,4) wedged into the central barrel-wall, (9,2) back among the east-side stacks right next to the rats' nest, and (7,7) in the south-lane chokepoint. Smashing a cask with attack_object makes it BURST — every creature adjacent (Chebyshev 1) takes a hit, FOES AND HEROES ALIKE, including whoever struck it. The teamwork combo is to LURE two or more rats next to a cask (the (9,2) cask already sits beside the rats' starting nest; the (6,4) and (7,7) casks sit where rats funnel toward the heroes), then DETONATE it with a hero who is NOT adjacent — ideally the hunter or warlock at range, since a melee hero would have to stand next to it and catch the blast too. Note the (6,4) cask is part of the central wall: popping it also blows a gap in the barricade. One good ranged hit can soften or drop a clustered pack; a careless melee swing torches a teammate. Reward heroes who set the trap together; let a lone, mistimed pop singe its own caster. When the last rat falls, broken floorboards in the south-west corner (0,8) yawn open over a dirt tunnel.",
+      "abilityTests": [
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Catch a girl's muffled cries coming up through the floorboards — it's Elara, the healer's apprentice, who went down after the rats and never came back. Call out to the party which way her voice sounds loudest." },
+        { "skill": "intelligence-knowledge",  "difficulty": 5, "describe": "Recall that this cellar gets the odd rat, but never a whole swarm like this. Something below is driving them up." }
+      ],
+      "conclusion": "The last rat squeals and goes still. The cellar reeks, but it's yours. In the south-west corner the floorboards are smashed open above a rough dirt tunnel — the rats came up from somewhere below. A faint, muffled cry drifts up from the dark: 'Help! Please — anyone down there?' It's Elara, the healer's apprentice — she went down after the rats and the swarm dragged her off into the deep.",
+      "i18n": {
+        "pt": {
+          "intro": "Vocês estão jantando numa taverna quando Maeve, a taverneira, sobe correndo do porão, branca como papel: \"Ratos gigantes, um ninho inteiro lá embaixo — e Iara, a aprendiz da curandeira, desceu para expulsá-los e não voltou!\" Todos olham para vocês. Sua primeira aventura de verdade: descer, vencer os ratos e trazer Iara de volta para casa.\n\nDescendo a escada, o porão fede a repolho azedo e pelo molhado. Barris entulham o chão — e alguns, marcados com uma caveira e arrastando um pavio, são barris de óleo de lampião que explodem com uma faísca. Então começa um arranhar de patas, e os ratos saem das sombras para encarar vocês.",
+          "opening": {
+            "before": "Três jovens heróis — Heitor, Caio e Breno — estão jantando na taverna quando a taverneira sobe correndo do porão: \"Ratos gigantes, um ninho inteiro lá embaixo — e Iara, a ajudante da curandeira, desceu para enfrentá-los e nunca mais voltou!\" A primeira aventura de verdade deles começa.",
+            "after": "Descendo a escada, o porão fede a repolho azedo e pelo molhado. Barris entulham o chão — e alguns, marcados com uma caveira e arrastando um pavio, são barris de óleo de lampião que explodem com uma faísca. Então começa um arranhar de patas, e os ratos saem das sombras para encarar vocês."
+          },
+          "conclusion": "O último rato guincha e fica imóvel. O porão fede, mas agora é de vocês. No canto sudoeste, as tábuas do chão estão arrebentadas sobre um túnel de terra bruta — os ratos subiram de algum lugar lá de baixo. Um grito fraco e abafado sobe do escuro: 'Socorro! Por favor — tem alguém aí?' É Iara, a aprendiz da curandeira — ela desceu atrás dos ratos e o bando a arrastou para as profundezas."
+        }
+      },
+      "transitions": [{ "to": "rat-tunnel", "trigger": "all-monsters-ko" }]
+    },
+    {
+      "id": "rat-tunnel",
+      "intro": "You drop through the broken floorboards into a hard-packed cave that smells like a giant rat's toilet. A jagged wall of stone stalagmites runs floor-to-ceiling across the middle of the cavern, sealing the way on — thick as tree-trunks, far too solid to chip with a blade or a bolt. But someone's been down here before you: a fat lamp-oil cask sits abandoned on the floor near the wall, its skull-and-crossbones fuse still dry. Beyond the spires, claws scrape and something big paces in the dark. A huge rat rears up on its hind legs — a crooked crown on its head, a gnawed-bone scepter in its paw — and hisses at you. The King Rat. Its pack swarms around it. And there, lashed to a stalagmite at the back of the arena behind them, is Elara — wrists bound in rat-nest sinew, struggling, very much alive and very much in reach of the rats' teeth. 'You came!' she gasps. 'Hurry — I can't get loose!' But the wall of stone stands between you and all of them.",
+      "map": {
+        "width": 15,
+        "height": 11,
+        "background": "rat-tunnel",
+        "walls": false,
+        "entry": [
+          { "x": 1, "y": 4 }, { "x": 1, "y": 5 }, { "x": 1, "y": 6 }
+        ],
+        "obstacles": [
+          { "type": "stalagmite", "x": 6, "y": 3 },
+          { "type": "stalagmite", "x": 6, "y": 4 },
+          { "type": "stalagmite", "x": 6, "y": 5 },
+          { "type": "stalagmite", "x": 6, "y": 6 },
+          { "type": "stalagmite", "x": 6, "y": 7 },
+          { "type": "oil-cask", "x": 4, "y": 7, "pushable": true, "explosive": { "damage": 1, "radius": 1 } }
+        ],
+        "decorations": [],
+        "wallCells": [
+          { "x": 0, "y": 0 }, { "x": 1, "y": 0 }, { "x": 2, "y": 0 }, { "x": 3, "y": 0 }, { "x": 4, "y": 0 }, { "x": 5, "y": 0 }, { "x": 6, "y": 0 }, { "x": 7, "y": 0 }, { "x": 8, "y": 0 }, { "x": 9, "y": 0 }, { "x": 10, "y": 0 }, { "x": 11, "y": 0 }, { "x": 12, "y": 0 }, { "x": 13, "y": 0 }, { "x": 14, "y": 0 },
+          { "x": 0, "y": 1 }, { "x": 1, "y": 1 }, { "x": 2, "y": 1 }, { "x": 3, "y": 1 }, { "x": 4, "y": 1 }, { "x": 5, "y": 1 }, { "x": 6, "y": 1 }, { "x": 7, "y": 1 }, { "x": 14, "y": 1 },
+          { "x": 0, "y": 2 }, { "x": 1, "y": 2 }, { "x": 2, "y": 2 }, { "x": 3, "y": 2 }, { "x": 4, "y": 2 }, { "x": 5, "y": 2 }, { "x": 6, "y": 2 }, { "x": 14, "y": 2 },
+          { "x": 0, "y": 3 }, { "x": 1, "y": 3 }, { "x": 10, "y": 3 }, { "x": 14, "y": 3 },
+          { "x": 0, "y": 4 }, { "x": 14, "y": 4 },
+          { "x": 0, "y": 5 }, { "x": 14, "y": 5 },
+          { "x": 0, "y": 6 }, { "x": 14, "y": 6 },
+          { "x": 0, "y": 7 }, { "x": 1, "y": 7 }, { "x": 11, "y": 7 }, { "x": 14, "y": 7 },
+          { "x": 0, "y": 8 }, { "x": 1, "y": 8 }, { "x": 2, "y": 8 }, { "x": 3, "y": 8 }, { "x": 4, "y": 8 }, { "x": 5, "y": 8 }, { "x": 6, "y": 8 }, { "x": 14, "y": 8 },
+          { "x": 0, "y": 9 }, { "x": 1, "y": 9 }, { "x": 2, "y": 9 }, { "x": 3, "y": 9 }, { "x": 4, "y": 9 }, { "x": 5, "y": 9 }, { "x": 6, "y": 9 }, { "x": 7, "y": 9 }, { "x": 14, "y": 9 },
+          { "x": 0, "y": 10 }, { "x": 1, "y": 10 }, { "x": 2, "y": 10 }, { "x": 3, "y": 10 }, { "x": 4, "y": 10 }, { "x": 5, "y": 10 }, { "x": 6, "y": 10 }, { "x": 7, "y": 10 }, { "x": 8, "y": 10 }, { "x": 9, "y": 10 }, { "x": 10, "y": 10 }, { "x": 11, "y": 10 }, { "x": 12, "y": 10 }, { "x": 13, "y": 10 }, { "x": 14, "y": 10 }
+        ],
+        "exits": [],
+        "captives": [
+          { "archetype": "healer", "characterId": "p3_healer", "name": "Elara", "startPos": { "x": 11, "y": 8 } }
+        ],
+        "chests": [
+          { "id": "supply-chest", "pos": { "x": 3, "y": 3 }, "contents": "cheese", "name": "Old supply chest", "description": "a dusty chest left by the tavern cellarer — open_chest beside it to take the wheel of cheese inside" }
+        ]
+      },
+      "monsters": [
+        { "type": "king-rat",  "startPos": { "x": 12, "y": 5 } },
+        { "type": "giant-rat", "startPos": { "x": 9,  "y": 3 } },
+        { "type": "giant-rat", "startPos": { "x": 11, "y": 2 } },
+        { "type": "giant-rat", "startPos": { "x": 9,  "y": 7 } }
+      ],
+      "monsterFocus": { "characterId": "p3_healer", "fromRound": 2 },
+      "tactics": "Heroes enter from the narrow tunnel mouth on the WEST (x=1, y=4-6). The cavern walls are solid rock; everyone moves only on the open floor. A SOLID wall of STALAGMITES fills column x=6 from y=3 to y=7, joining the rock top and bottom — it completely separates the heroes (west, x=1-5) from the King Rat and three giant rats (east, x=8-13). It blocks movement AND line-of-sight: until a gap is opened NOBODY can cross and NO ranged or magic shot can reach the far side. THE STALAGMITES ARE ATTACK-PROOF — they are living cave stone; no sword, arrow, or spell can chip them, and attack_object on a stalagmite simply fails. The ONLY way through is the PUSH-AND-DETONATE puzzle, and it demands teamwork: an abandoned lamp-oil cask sits at (4,7), in the cavern's south, one cell shy of the wall with an empty gap at (5,7) between them. (1) PUSH the cask. A hero stands WEST of it (at (3,7)) and uses push_object to shove the cask one cell east into (5,7) — now flush against the stalagmite wall. push_object needs no roll, but it costs that hero's whole action, so they can't also fight that turn. (2) DETONATE it. A second hero — one who is NOT adjacent to the cask, ideally the ranged hunter or warlock standing back at x≤3 — smashes the cask with attack_object. It BURSTS: the blast shatters every stalagmite within one cell (clearing (6,6),(6,7) — the rock below (6,8) doesn't budge) and blows a two-tile breach at the wall's southern end. WARNING: the blast also hits any creature within one cell, friend or foe — so the pusher must step clear and nobody should be hugging the cask when it goes. Detonating the cask BEFORE it's pushed adjacent is wasted — the blast won't reach the wall. So the play is: one hero pushes, everyone clears the blast zone, a ranged hero pops it from safety, then the party pours through the breach (only one or two fit per turn — sequence it). Once across, the King Rat is the priority: it has 3 health and bites with 2 dice, so FOCUS FIRE and swarm it together rather than each chipping a different rat. Two heroes adjacent to the king 'engage' it (the warrior's Teamwork = +1 die), and the rock pillars at (10,3) and (11,7) give ranged heroes cover to break the king's line of sight. The pack fights to protect their king; play them with hungry, simple menace. THE RESCUE: Elara the healer is bound and IMMOBILIZED at (11,8), at the back of the king's arena beyond the wall — she cannot move or fight until freed. A hero who reaches her (stands adjacent) and calls free_ally rolls to cut her loose; once freed she joins the fight as a fourth hero (a healer — invaluable). But she is helpless and exposed: the rats can bite her while she's bound, and if they KO her before the party breaks through she is lost. The rats, left to their own hunger, will go for the easy, struggling prey — so the party must breach FAST and peel the pack off her. As DM, play that pressure: let the rats menace the captive, and reward the heroes who fight through to her. When the King Rat and his giant rats are all down, the cave is safe and Elara (if freed) is reunited with the party — or, if she fell, the heroes carry her home. THE CHEESE TRICK: a dusty supply chest sits on the west side at (3,3). A hero who stands beside it can open_chest to take a wheel of Cheese, then throw_cheese to lob it onto a floor cell up to 4 squares away — and every rat will break off the heroes to scramble for it (the first rat there eats it). It is a teamwork tool, not a kill: use it to lure the pack off bound Elara, scatter a gang-up, or freeze the rats a turn while someone breaches. As DM, play the rats' greed — narrate them whipping toward the cheese, noses twitching — and reward heroes who set the bait to open a window for the others.",
+      "abilityTests": [
+        { "skill": "intelligence-perception", "difficulty": 4, "describe": "Size up the stalagmite wall — the stone is too solid for any blade or bolt to chip. But that abandoned lamp-oil cask by the wall could blow a hole, if someone shoved it flush against the spires first. Call the plan out to the party." },
+        { "skill": "intelligence-tracking",  "difficulty": 4, "describe": "Read the rat tracks — they all run up to the wall and through it, heading to the King Rat's nest beyond, where Elara is bound." }
+      ],
+      "conclusion": "With a final strike the King Rat topples, his crooked crown rolling into the dirt, and his pack scatters into silence. If you cut Elara free, she sags against the stalagmite rubbing her raw wrists, then grins through the grime: 'I knew you'd come. Now hold still — half of you are bleeding.' She's already reaching for her herbs. The healer's apprentice owes you her life, and she means to repay it the whole way home. Time to climb back to daylight — you've earned a week of extra ice-cream.",
+      "i18n": {
+        "pt": {
+          "intro": "Vocês descem pelas tábuas quebradas até uma caverna de chão batido que cheira como a privada de um rato gigante. Uma muralha denteada de estalagmites de pedra atravessa o meio da caverna, do chão ao teto, fechando o caminho adiante — grossas como troncos de árvore, sólidas demais para lascar com lâmina ou flecha. Mas alguém já esteve aqui antes de vocês: um barril gordo de óleo de lampião está largado no chão perto da muralha, com seu pavio de caveira ainda seco. Além das pedras, garras arranham e algo grande anda de um lado para o outro no escuro. Um rato enorme se ergue nas patas traseiras — uma coroa torta na cabeça, um cetro de osso roído na pata — e sibila para vocês. O Rato Rei. Seu bando formiga ao redor dele. E ali, amarrada a uma estalagmite no fundo da arena atrás deles, está Iara — pulsos atados com tendões de ninho de rato, se debatendo, bem viva e bem ao alcance dos dentes dos ratos. 'Vocês vieram!' ela ofega. 'Depressa — não consigo me soltar!' Mas a muralha de pedra está entre vocês e todos eles.",
+          "conclusion": "Com um último golpe o Rato Rei tomba, sua coroa torta rolando na terra, e seu bando se dispersa em silêncio. Se vocês cortarem as amarras de Iara, ela desaba contra a estalagmite esfregando os pulsos em carne viva e abre um sorriso por baixo da sujeira: 'Eu sabia que vocês viriam. Agora fiquem parados — metade de vocês está sangrando.' Ela já está pegando suas ervas. A aprendiz da curandeira deve a vida a vocês, e pretende retribuir durante todo o caminho de casa. Hora de subir de volta para a luz do dia — vocês mereceram uma semana de sorvete extra."
+        }
+      },
+      "transitions": [{ "to": "END", "trigger": "all-monsters-ko" }]
+    }
+  ]
+}
